@@ -268,14 +268,13 @@ int main() {
 
 
 	neopixel.begin();
+
+
 	neopixel.fillPixelColor(0,0,255);
 	neopixel.show();
 
 	// wait 500ms
 	sleep_ms(500);
-
-
-
 
 
 

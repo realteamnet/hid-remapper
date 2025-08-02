@@ -267,12 +267,7 @@ int main() {
 	WS2812 neopixel = WS2812(NUMNEOPIXELS, NEOPIXELIO); // Create your instance of the library
 
 
-	neopixel.begin();
-	neopixel.fillPixelColor(0,0,255);
-	neopixel.show();
 
-	// wait 500ms
-	sleep_ms(500);
 
 
 

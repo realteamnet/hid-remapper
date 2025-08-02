@@ -231,11 +231,6 @@ uint64_t get_unique_id() {
     return ret;
 }
 
-
-#include "pico-ws2812/ws2812.h"
-
-
-
 int main() {
     my_mutexes_init();
     gpio_pins_init();
@@ -258,26 +253,6 @@ int main() {
     tud_sof_isr_set(sof_handler);
 
     next_print = time_us_64() + 1000000;
-
-
-
-	const uint NEOPIXELIO = 16; // Define your GPIO pin
-	const int NUMNEOPIXELS = 1; // Define number of neopixels
-
-	WS2812 neopixel = WS2812(NUMNEOPIXELS, NEOPIXELIO); // Create your instance of the library
-
-
-	neopixel.begin();
-	neopixel.fillPixelColor(0,0,255);
-	neopixel.show();
-
-	// wait 500ms
-	sleep_ms(500);
-
-
-
-
-
 
     while (true) {
         bool tick;

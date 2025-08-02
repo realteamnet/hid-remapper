@@ -268,6 +268,8 @@ int main() {
 
 
 	neopixel.begin();
+
+
 	neopixel.fillPixelColor(0,0,255);
 	neopixel.show();
 
@@ -275,7 +277,7 @@ int main() {
 	sleep_ms(500);
 
 
-
+	
 
 
 
