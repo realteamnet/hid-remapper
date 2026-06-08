@@ -46,7 +46,10 @@ add_executable(remapper
     src/ps_auth.cc
     src/app_driver.cc
     src/xbox.cc
+    rp2040-ws2812/ws2812_led.cc
 )
+
+pico_generate_pio_header(remapper ${CMAKE_CURRENT_LIST_DIR}/rp2040-ws2812/ws2812.pio)
 
 if((PICO_BOARD STREQUAL "pico") OR (PICO_BOARD STREQUAL "pico2"))
 target_compile_definitions(remapper PUBLIC PICO_DEFAULT_UART_TX_PIN=16)
@@ -58,6 +61,7 @@ target_include_directories(remapper PRIVATE
     src
     src/tusb_config_both
     ${PICO_PIO_USB_PATH}
+    rp2040-ws2812
 )
 
 target_link_libraries(remapper
