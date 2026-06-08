@@ -145,5 +145,3 @@ The generated `ws2812.pio.h` must be on the include path — `pico_generate_pio_
 handles that automatically. The PIO program is 4 instructions and the driver
 claims one free state machine on `WS2812_PIO`, so it coexists with the
 Pico-PIO-USB host.
-
-##

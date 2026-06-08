@@ -27,6 +27,16 @@ parts of the hid-remapper tree.
 | `ws2812_led.cc` | Framebuffer, PIO state-machine setup, optional activity blink.   |
 | `README.md`     | Usage + the exact edits needed to wire the module into hid-remapper. |
 
+## Build / CI workflow
+
+- This module is built on GitHub Actions by `.github/workflows/build-rp2040.yml`,
+  which runs on push to `firmware/**`.
+- **Commit convention:** prefix commit messages with `CLAUDE-` for changes made
+  here, then push so the workflow runs.
+- After pushing, check the latest `CLAUDE-`-prefixed workflow run for compile
+  errors (`gh run list` / `gh run view --log-failed`) and fix the code
+  accordingly before considering the change done.
+
 ## Design notes
 
 - Uses the RP2040 **PIO** to generate the WS2812 waveform; claims one free state
