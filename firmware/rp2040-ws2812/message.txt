@@ -1,0 +1,11 @@
+CLAUDE- add message.txt and trigger ws2812 build for rp2040_pizero
+
+Establish firmware/rp2040-ws2812/message.txt as the commit-message
+source (committed via git commit -F).
+
+The build-rp2040 workflow only triggers on changes under firmware/**,
+so the previous workflow-only commit did not run CI. This commit lives
+under firmware/, so it re-runs build-rp2040 and compiles the ws2812
+module into the waveshare_rp2040_pizero build.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
