@@ -1,0 +1,51 @@
+;
+; WS2812 (NeoPixel) PIO driver program.
+;
+; Adapted from the Raspberry Pi Pico SDK examples (pico-examples/pio/ws2812),
+; Copyright (c) 2020 Raspberry Pi (Trading) Ltd. SPDX-License-Identifier: BSD-3-Clause.
+;
+; Drives one GPIO with the WS2812 one-wire protocol. Each bit is encoded as a
+; high pulse whose width selects 0 or 1. Timing is set by the clock divider in
+; ws2812_program_init() so the same program works on any clk_sys frequency.
+;
+
+.program ws2812
+.side_set 1
+
+.define public T1 2
+.define public T2 5
+.define public T3 3
+
+.wrap_target
+bitloop:
+    out x, 1       side 0 [T3 - 1] ; Drive low during the inter-bit gap, pull next bit.
+    jmp !x do_zero side 1 [T1 - 1] ; Drive high; branch on the bit value.
+do_one:
+    jmp  bitloop   side 1 [T2 - 1] ; A "1" keeps the line high longer.
+do_zero:
+    nop            side 0 [T2 - 1] ; A "0" returns low early.
+.wrap
+
+% c-sdk {
+#include "hardware/clocks.h"
+
+// Configure a state machine to drive `pin` with the WS2812 protocol at `freq`
+// Hz (typically 800000). Set `rgbw` true for SK6812-style RGBW strips so the
+// autopull threshold becomes 32 bits instead of 24.
+static inline void ws2812_program_init(PIO pio, uint sm, uint offset, uint pin, float freq, bool rgbw) {
+    pio_gpio_init(pio, pin);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+
+    pio_sm_config c = ws2812_program_get_default_config(offset);
+    sm_config_set_sideset_pins(&c, pin);
+    sm_config_set_out_shift(&c, false, true, rgbw ? 32 : 24);
+    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
+
+    int cycles_per_bit = ws2812_T1 + ws2812_T2 + ws2812_T3;
+    float div = clock_get_hz(clk_sys) / (freq * cycles_per_bit);
+    sm_config_set_clkdiv(&c, div);
+
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}
