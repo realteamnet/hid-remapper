@@ -59,7 +59,11 @@ void ws2812_led_init() {
     sm = pio_claim_unused_sm(pio, true);
     ws2812_program_init(pio, sm, offset, WS2812_PIN, WS2812_FREQ, WS2812_IS_RGBW);
 
-    ws2812_led_set_all(0, 0, 0);
+    // Bring-up power-on indicator: steady dim green. This also verifies colour
+    // order on real hardware — a correct GRB strip shows green here; an
+    // RGB-ordered strip shows red (then swap the bytes in ws2812_led_set()).
+    // TODO: revert to off-at-idle once the LED is confirmed.
+    ws2812_led_set_all(0, 8, 0);
     ws2812_led_show();
 }
 
