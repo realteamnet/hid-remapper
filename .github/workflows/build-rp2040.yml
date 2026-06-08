@@ -45,11 +45,11 @@ jobs:
           # PICO_BOARD=feather_host cmake ..
           # make remapper
           # cd ..
-          # mkdir build-waveshare_rp2040_pizero
-          # cd build-waveshare_rp2040_pizero
-          # PICO_BOARD=waveshare_rp2040_pizero cmake ..
-          # make remapper
-          # cd ..
+          mkdir build-waveshare_rp2040_pizero
+          cd build-waveshare_rp2040_pizero
+          PICO_BOARD=waveshare_rp2040_pizero cmake ..
+          make remapper
+          cd ..
           # mkdir build-pico2
           # cd build-pico2
           # PICO_BOARD=pico2 cmake ..
@@ -70,11 +70,11 @@ jobs:
           # PICO_BOARD=flatbox_rev8 cmake ..
           # make remapper
           # cd ..
-          mkdir build-waveshare_rp2350_pizero
-          cd build-waveshare_rp2350_pizero
-          PICO_BOARD=waveshare_rp2350_pizero cmake ..
-          make remapper
-          cd ..
+          # mkdir build-waveshare_rp2350_pizero
+          # cd build-waveshare_rp2350_pizero
+          # PICO_BOARD=waveshare_rp2350_pizero cmake ..
+          # make remapper
+          # cd ..
           # mkdir build-meisterconverter
           # cd build-meisterconverter
           # PICO_BOARD=meisterconverter cmake ..
