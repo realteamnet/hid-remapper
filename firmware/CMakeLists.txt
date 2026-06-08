@@ -57,6 +57,12 @@ target_compile_definitions(remapper PUBLIC PICO_DEFAULT_UART_RX_PIN=17)
 target_compile_definitions(remapper PUBLIC PICO_DEFAULT_PIO_USB_DP_PIN=0)
 endif()
 
+# Enable the rp2040-ws2812 LED module on boards that have a WS2812 on GPIO16.
+# (pico/pico2 share that pin with the default UART TX, used here for testing.)
+if((PICO_BOARD STREQUAL "pico") OR (PICO_BOARD STREQUAL "pico2") OR (PICO_BOARD STREQUAL "waveshare_rp2040_pizero"))
+target_compile_definitions(remapper PUBLIC WS2812_ENABLED WS2812_PIN=16)
+endif()
+
 target_include_directories(remapper PRIVATE
     src
     src/tusb_config_both

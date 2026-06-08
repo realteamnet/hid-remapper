@@ -36,7 +36,11 @@ uint32_t get_gpio_valid_pins_mask() {
                                       (1 << PICO_DEFAULT_UART_RX_PIN) |
 #endif
                                       (1 << PICO_DEFAULT_PIO_USB_DP_PIN) |
-                                      (1 << (PICO_DEFAULT_PIO_USB_DP_PIN + 1)));
+                                      (1 << (PICO_DEFAULT_PIO_USB_DP_PIN + 1)) |
+#ifdef WS2812_ENABLED
+                                      (1 << WS2812_PIN) |
+#endif
+                                      0);
 }
 
 static bool reports_received;

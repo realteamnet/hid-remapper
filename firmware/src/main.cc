@@ -28,6 +28,9 @@
 #include "platform.h"
 #include "remapper.h"
 #include "tick.h"
+#ifdef WS2812_ENABLED
+#include "ws2812_led.h"
+#endif
 
 // RP2350 UF2s wipe the last sector of flash every time
 // because of RP2350-E10 errata mitigation. So we put
@@ -256,6 +259,12 @@ int main() {
     tusb_init();
     stdio_init_all();
 
+#ifdef WS2812_ENABLED
+    // Init after stdio so the PIO claims the data pin last (e.g. when it
+    // overlaps a default UART pin). Turns the LED off (was uninitialised/white).
+    ws2812_led_init();
+#endif
+
     tud_sof_isr_set(sof_handler);
 
     next_print = time_us_64() + 1000000;
@@ -266,6 +275,9 @@ int main() {
         read_report(&new_report, &tick);
         if (new_report) {
             activity_led_on();
+#ifdef WS2812_ENABLED
+            ws2812_led_activity_on();
+#endif
         }
         if (their_descriptor_updated) {
             update_their_descriptor_derivates();
@@ -275,6 +287,9 @@ int main() {
             bool gpio_state_changed = read_gpio(time_us_64());
             if (gpio_state_changed) {
                 activity_led_on();
+#ifdef WS2812_ENABLED
+                ws2812_led_activity_on();
+#endif
             }
 #ifdef ADC_ENABLED
             read_adc();
@@ -321,6 +336,9 @@ int main() {
         print_stats_maybe();
 
         activity_led_off_maybe();
+#ifdef WS2812_ENABLED
+        ws2812_led_activity_off_maybe();
+#endif
     }
 
     return 0;

@@ -45,11 +45,23 @@ have defaults so the module builds without configuration.
 
 ## Changes required to integrate into hid-remapper
 
-> These edits are **not** applied to hid-remapper's original source — they are
-> documented here so the integration stays explicit and this folder can remain a
-> drop-in submodule. Apply them in the hid-remapper tree when wiring the module in.
+> These edits **are applied** in this tree, but every upstream call site is
+> guarded by `#ifdef WS2812_ENABLED` and the define is only set for selected
+> boards (see step 1). Boards without it compile byte-identically to upstream,
+> so the module stays a low-impact, drop-in submodule. The sections below
+> document exactly what was changed and why.
 
 All paths below are relative to `firmware/` in the hid-remapper repo.
+
+Enablement is per-board via `WS2812_ENABLED` + `WS2812_PIN`, set in
+`CMakeLists.txt`. Currently enabled for `pico`, `pico2`, and
+`waveshare_rp2040_pizero` (all WS2812-on-GPIO16):
+
+```cmake
+if((PICO_BOARD STREQUAL "pico") OR (PICO_BOARD STREQUAL "pico2") OR (PICO_BOARD STREQUAL "waveshare_rp2040_pizero"))
+target_compile_definitions(remapper PUBLIC WS2812_ENABLED WS2812_PIN=16)
+endif()
+```
 
 ### 1. `firmware/CMakeLists.txt`
 
@@ -81,31 +93,40 @@ you want the LED on those build variants.)
 
 ### 2. `firmware/src/main.cc`
 
-Include the header, initialise the driver, and (optionally) drive the activity
-blink. Three small additions:
+Include the header, initialise the driver, and drive the activity blink — all
+guarded by `WS2812_ENABLED`:
 
 ```c
-#include "ws2812_led.h"          // (a) with the other includes
+#include "tick.h"
+#ifdef WS2812_ENABLED            // (a) with the other includes
+#include "ws2812_led.h"
+#endif
 ```
 
 ```c
-    board_init();
-    extra_init();
-    ws2812_led_init();           // (b) after board_init()/extra_init()
+    tusb_init();
+    stdio_init_all();
+#ifdef WS2812_ENABLED            // (b) after stdio_init_all() so the PIO
+    ws2812_led_init();           //     claims the pin last (UART overlap)
+#endif
 ```
 
 ```c
-        read_report(&new_report, &tick);
         if (new_report) {
             activity_led_on();
-            ws2812_led_activity_on();          // (c) mirror the activity_led calls
+#ifdef WS2812_ENABLED            // (c) mirror the activity_led calls
+            ws2812_led_activity_on();
+#endif
         }
         ...
         activity_led_off_maybe();
-        ws2812_led_activity_off_maybe();       // (c) once per loop iteration
+#ifdef WS2812_ENABLED
+        ws2812_led_activity_off_maybe();
+#endif
 ```
 
-If you only want to set colours from your own logic, you can skip step (c) and
+(The same `ws2812_led_activity_on()` guard is added in the `gpio_state_changed`
+branch.) If you only want to set colours from your own logic, skip step (c) and
 call `ws2812_led_set*()` / `ws2812_led_show()` directly instead.
 
 ### 3. Free the data-line GPIO from hid-remapper's pin management — **important**
@@ -129,14 +150,21 @@ Pick **one** of:
       return GPIO_VALID_PINS_BASE & ~(
                                         ...
                                         (1 << (PICO_DEFAULT_PIO_USB_DP_PIN + 1)) |
-                                        (1 << WS2812_PIN));   // <-- add
+  #ifdef WS2812_ENABLED
+                                        (1 << WS2812_PIN) |   // <-- add
+  #endif
+                                        0);
   }
   ```
 
+This is the approach used here (in `remapper_single.cc`).
+
 ### Default pin caveat
 
-`WS2812_PIN` defaults to `16`, which is `PICO_DEFAULT_UART_TX_PIN` on a stock
-Pico. Set `WS2812_PIN` to a free GPIO for your board before building.
+`WS2812_PIN` is `16` for the enabled boards, which is the WS2812 data line on
+the Waveshare RP2040-PiZero (and `PICO_DEFAULT_UART_TX_PIN` on a stock Pico —
+the module deliberately initialises after `stdio_init_all()` so the PIO wins the
+pin). Set `WS2812_PIN` to a free GPIO for any other board before enabling it.
 
 ## Build / verify
 

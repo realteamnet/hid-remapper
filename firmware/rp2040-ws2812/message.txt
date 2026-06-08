@@ -1,11 +1,19 @@
-CLAUDE- add message.txt and trigger ws2812 build for rp2040_pizero
+CLAUDE- actually drive the ws2812 LED (wire init + activity into main loop)
 
-Establish firmware/rp2040-ws2812/message.txt as the commit-message
-source (committed via git commit -F).
+The module was compiled but never called, so the WS2812 on GPIO16 was
+left undriven and showed white. Wire it in, gated by WS2812_ENABLED:
 
-The build-rp2040 workflow only triggers on changes under firmware/**,
-so the previous workflow-only commit did not run CI. This commit lives
-under firmware/, so it re-runs build-rp2040 and compiles the ws2812
-module into the waveshare_rp2040_pizero build.
+- main.cc: ws2812_led_init() after stdio_init_all() (so the PIO claims
+  the pin last when it overlaps the default UART TX), plus
+  ws2812_led_activity_on()/off_maybe() mirroring the activity_led calls.
+- remapper_single.cc: exclude WS2812_PIN from get_gpio_valid_pins_mask()
+  so hid-remapper stops driving the data line.
+- CMakeLists.txt: define WS2812_ENABLED + WS2812_PIN=16 for pico, pico2
+  and waveshare_rp2040_pizero (all WS2812-on-GPIO16). Other boards build
+  unchanged.
+
+pico is enabled so the LED can be verified on hardware that enumerates,
+independent of the separate waveshare_rp2040_pizero boot/enumeration
+issue.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
