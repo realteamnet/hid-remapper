@@ -1,7 +1,13 @@
-CLAUDE- trigger build-rp2040 with updated release-upload workflow
+CLAUDE- ws2812_led_show: optional lit-time and flash-delay params
 
-No-op firmware/** change to fire the workflow (it only triggers on
-pushes under firmware/**, and the workflow edit was under .github/).
-Exercises the new softprops/action-gh-release upload step.
+ws2812_led_show(lit_ms = WS2812_INFINITE, flash_ms = 0):
+- lit_ms: how long to keep the LED lit (ms). WS2812_INFINITE (default)
+  shows and returns immediately (non-blocking, unchanged behaviour).
+- flash_ms: when > 0, blink on/off every flash_ms until lit_ms elapses;
+  0 (default) = no blink. A finite lit_ms blocks for that duration then
+  turns the LED off.
+
+Existing no-arg callers (init/activity) keep their current behaviour via
+the defaults.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>

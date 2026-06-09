@@ -81,13 +81,40 @@ void ws2812_led_set_all(uint8_t r, uint8_t g, uint8_t b) {
     }
 }
 
-void ws2812_led_show() {
+// Push the framebuffer (on) or all-zeros (off) without disturbing the stored
+// colours, so flashing can toggle between the two.
+static void push_frame(bool on) {
+    for (uint32_t i = 0; i < WS2812_NUM_LEDS; i++) {
+        put_pixel(on ? framebuffer[i] : 0);
+    }
+}
+
+void ws2812_led_show(int32_t lit_ms, uint32_t flash_ms) {
     if (sm < 0) {
         return;  // Not initialised yet.
     }
-    for (uint32_t i = 0; i < WS2812_NUM_LEDS; i++) {
-        put_pixel(framebuffer[i]);
+
+    push_frame(true);
+
+    if (lit_ms < 0) {
+        return;  // WS2812_INFINITE: leave it lit, return immediately.
     }
+
+    // Finite lit time: block for lit_ms, optionally blinking, then turn off.
+    const uint64_t end = time_us_64() + (uint64_t) lit_ms * 1000;
+    const uint64_t flash_us = (uint64_t) flash_ms * 1000;
+    bool on = true;
+    uint64_t next_toggle = (flash_us > 0) ? time_us_64() + flash_us : end;
+
+    while (time_us_64() < end) {
+        if ((flash_us > 0) && (time_us_64() >= next_toggle)) {
+            on = !on;
+            push_frame(on);
+            next_toggle += flash_us;
+        }
+    }
+
+    push_frame(false);  // off once the lit time finishes
 }
 
 void ws2812_led_activity_on() {
