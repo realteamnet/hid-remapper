@@ -22,8 +22,9 @@ never conflicts with the Pico-PIO-USB host).
 void ws2812_led_init();                                   // call once, after board_init()
 void ws2812_led_set(uint32_t index, uint8_t r, uint8_t g, uint8_t b);
 void ws2812_led_set_all(uint8_t r, uint8_t g, uint8_t b);
-void ws2812_led_show(int32_t lit_ms = WS2812_INFINITE,    // flush; optionally keep lit
-                     uint32_t flash_ms = 0);              // for lit_ms, blinking every flash_ms
+void ws2812_led_show(int32_t lit_ms = WS2812_INFINITE,    // flush (non-blocking); keep lit lit_ms,
+                     uint32_t flash_ms = 0);              // blinking every flash_ms; advanced by task()
+void ws2812_led_task();                                   // pump show/flash timing each main-loop iter
 void ws2812_led_activity_on();                            // optional activity_led replacement
 void ws2812_led_activity_off_maybe();
 ```

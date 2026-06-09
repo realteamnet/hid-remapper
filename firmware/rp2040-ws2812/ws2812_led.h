@@ -41,19 +41,24 @@ void ws2812_led_set_all(uint8_t r, uint8_t g, uint8_t b);
 // Sentinel for ws2812_led_show(): keep the LED lit indefinitely.
 #define WS2812_INFINITE (-1)
 
-// Push the framebuffer to the strip.
+// Push the framebuffer to the strip. ALWAYS non-blocking: it lights the LED
+// immediately and returns; timing is advanced by ws2812_led_task().
 //   lit_ms   - how long to keep the LED lit, in milliseconds. WS2812_INFINITE
-//              (default) shows it and returns immediately (non-blocking).
-//   flash_ms - if > 0, blink the LED on/off every flash_ms until lit_ms
-//              elapses; 0 (default) = no blink. Only meaningful with a finite
-//              lit_ms.
-// NOTE: a finite lit_ms BLOCKS the caller for that duration, then turns the
-//       LED off. Keep durations short - USB/host tasks do not run while blocked.
+//              (default) leaves it lit until the next show()/off.
+//   flash_ms - if > 0, blink the LED on/off every flash_ms (until lit_ms
+//              elapses, or forever if lit_ms is WS2812_INFINITE); 0 (default)
+//              = no blink.
+// Requires ws2812_led_task() to be called regularly from the main loop.
 #ifdef __cplusplus
 void ws2812_led_show(int32_t lit_ms = WS2812_INFINITE, uint32_t flash_ms = 0);
 #else
 void ws2812_led_show(int32_t lit_ms, uint32_t flash_ms);
 #endif
+
+// Advance the non-blocking show/flash timing. Call once per main-loop iteration
+// (ws2812_led_activity_off_maybe() already does this, so wiring that in the loop
+// is sufficient).
+void ws2812_led_task();
 
 // Optional drop-in replacement for the stock activity_led: blink the strip
 // when HID activity is seen. Mirror the existing activity_led call sites:

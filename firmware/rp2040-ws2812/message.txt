@@ -1,13 +1,11 @@
-CLAUDE- ws2812_led_show: optional lit-time and flash-delay params
+CLAUDE- make ws2812_led_show fully non-blocking
 
-ws2812_led_show(lit_ms = WS2812_INFINITE, flash_ms = 0):
-- lit_ms: how long to keep the LED lit (ms). WS2812_INFINITE (default)
-  shows and returns immediately (non-blocking, unchanged behaviour).
-- flash_ms: when > 0, blink on/off every flash_ms until lit_ms elapses;
-  0 (default) = no blink. A finite lit_ms blocks for that duration then
-  turns the LED off.
+Replace the blocking lit/flash loop with a state machine advanced by a
+new ws2812_led_task(). ws2812_led_show() now lights the LED and returns
+immediately; the per-loop task handles auto-off and on/off flashing
+(flash works with WS2812_INFINITE too, blinking until the next show/off).
 
-Existing no-arg callers (init/activity) keep their current behaviour via
-the defaults.
+ws2812_led_activity_off_maybe() now just pumps ws2812_led_task(), so the
+existing main-loop hook is sufficient - no main.cc change needed.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>

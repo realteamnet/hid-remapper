@@ -41,8 +41,13 @@ static int sm = -1;
 // One 32-bit word per LED, already byte-ordered for the strip (GRB, MSB first).
 static uint32_t framebuffer[WS2812_NUM_LEDS];
 
-static bool activity_state = false;
-static uint64_t turn_off_after = 0;
+// Non-blocking show/flash state, advanced by ws2812_led_task().
+static bool show_active = false;       // a timed show is in progress
+static bool show_infinite = false;     // lit with no auto-off
+static uint64_t show_off_at = 0;       // when to turn off (if !infinite), us
+static uint64_t flash_interval = 0;    // us between on/off toggles; 0 = no flash
+static uint64_t flash_next_toggle = 0;
+static bool flash_on = true;
 
 // Push one pixel. The PIO autopull threshold is 24 bits for RGB (so the colour
 // must sit in the top 24 bits) and 32 bits for RGBW.
@@ -89,45 +94,49 @@ static void push_frame(bool on) {
     }
 }
 
+// Non-blocking: lights the LED immediately and records when it should turn off
+// and/or toggle. The actual timing is advanced by ws2812_led_task(), which must
+// be called regularly from the main loop.
 void ws2812_led_show(int32_t lit_ms, uint32_t flash_ms) {
     if (sm < 0) {
         return;  // Not initialised yet.
     }
 
+    uint64_t now = time_us_64();
     push_frame(true);
 
-    if (lit_ms < 0) {
-        return;  // WS2812_INFINITE: leave it lit, return immediately.
+    flash_on = true;
+    flash_interval = (uint64_t) flash_ms * 1000;
+    flash_next_toggle = now + flash_interval;
+    show_infinite = (lit_ms < 0);
+    show_off_at = show_infinite ? 0 : now + (uint64_t) lit_ms * 1000;
+    show_active = true;
+}
+
+// Advance the (non-blocking) show/flash state. Call once per main-loop iteration.
+void ws2812_led_task() {
+    if (!show_active) {
+        return;
+    }
+    uint64_t now = time_us_64();
+
+    if ((flash_interval > 0) && (now >= flash_next_toggle)) {
+        flash_on = !flash_on;
+        push_frame(flash_on);
+        flash_next_toggle += flash_interval;
     }
 
-    // Finite lit time: block for lit_ms, optionally blinking, then turn off.
-    const uint64_t end = time_us_64() + (uint64_t) lit_ms * 1000;
-    const uint64_t flash_us = (uint64_t) flash_ms * 1000;
-    bool on = true;
-    uint64_t next_toggle = (flash_us > 0) ? time_us_64() + flash_us : end;
-
-    while (time_us_64() < end) {
-        if ((flash_us > 0) && (time_us_64() >= next_toggle)) {
-            on = !on;
-            push_frame(on);
-            next_toggle += flash_us;
-        }
+    if (!show_infinite && (now >= show_off_at)) {
+        push_frame(false);
+        show_active = false;
     }
-
-    push_frame(false);  // off once the lit time finishes
 }
 
 void ws2812_led_activity_on() {
-    activity_state = true;
     ws2812_led_set_all(WS2812_ACTIVITY_R, WS2812_ACTIVITY_G, WS2812_ACTIVITY_B);
-    ws2812_led_show();
-    turn_off_after = time_us_64() + WS2812_ACTIVITY_US;
+    ws2812_led_show(WS2812_ACTIVITY_US / 1000);  // lit ~50ms, auto-off via task
 }
 
 void ws2812_led_activity_off_maybe() {
-    if (activity_state && (time_us_64() > turn_off_after)) {
-        activity_state = false;
-        ws2812_led_set_all(0, 0, 0);
-        ws2812_led_show();
-    }
+    ws2812_led_task();  // kept as the existing main-loop hook; just pumps the task
 }
