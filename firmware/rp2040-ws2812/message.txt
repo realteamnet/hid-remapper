@@ -1,11 +1,9 @@
-CLAUDE- make ws2812_led_show fully non-blocking
+CLAUDE- temporarily disable stock activity_led calls in main loop
 
-Replace the blocking lit/flash loop with a state machine advanced by a
-new ws2812_led_task(). ws2812_led_show() now lights the LED and returns
-immediately; the per-loop task handles auto-off and on/off flashing
-(flash works with WS2812_INFINITE too, blinking until the next show/off).
-
-ws2812_led_activity_off_maybe() now just pumps ws2812_led_task(), so the
-existing main-loop hook is sufficient - no main.cc change needed.
+Comment out activity_led_on()/activity_led_off_maybe() in main.cc (they
+may interfere with the ws2812 LED); the ws2812 activity calls remain.
+To be replaced by ws2812 calls later. Also refresh CLAUDE.md to record
+the applied integration, non-blocking show/task, CI/release/token notes
+and open bring-up items.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>

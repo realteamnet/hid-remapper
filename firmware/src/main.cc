@@ -274,7 +274,7 @@ int main() {
         bool new_report;
         read_report(&new_report, &tick);
         if (new_report) {
-            activity_led_on();
+            // activity_led_on();  // temporarily disabled (may interfere with ws2812); replace with ws2812 later
 #ifdef WS2812_ENABLED
             ws2812_led_activity_on();
 #endif
@@ -286,7 +286,7 @@ int main() {
         if (tick) {
             bool gpio_state_changed = read_gpio(time_us_64());
             if (gpio_state_changed) {
-                activity_led_on();
+                // activity_led_on();  // temporarily disabled (may interfere with ws2812); replace with ws2812 later
 #ifdef WS2812_ENABLED
                 ws2812_led_activity_on();
 #endif
@@ -335,7 +335,7 @@ int main() {
 
         print_stats_maybe();
 
-        activity_led_off_maybe();
+        // activity_led_off_maybe();  // temporarily disabled (may interfere with ws2812); replace with ws2812 later
 #ifdef WS2812_ENABLED
         ws2812_led_activity_off_maybe();
 #endif
