@@ -113,5 +113,7 @@ jobs:
       - name: Upload Unzipped Files to Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: latest
+          name: Latest firmware
           files: |
             firmware/artifacts/*
