@@ -7,6 +7,8 @@ on:
 defaults:
   run:
     shell: bash --noprofile --norc -x -e -o pipefail {0}
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -107,3 +109,8 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           path: firmware/artifacts/*
+      - name: Upload Unzipped Files to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            firmware/artifacts/*
