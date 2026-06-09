@@ -1,8 +1,7 @@
-CLAUDE- ws2812 bring-up: steady dim-green power-on indicator
+CLAUDE- trigger build-rp2040 with updated release-upload workflow
 
-Set a steady dim green at init (instead of off) so the LED can be
-verified on hardware and the colour byte order confirmed: a correct GRB
-strip shows green, an RGB-ordered strip shows red. Temporary bring-up
-aid; revert to off-at-idle once confirmed.
+No-op firmware/** change to fire the workflow (it only triggers on
+pushes under firmware/**, and the workflow edit was under .github/).
+Exercises the new softprops/action-gh-release upload step.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
