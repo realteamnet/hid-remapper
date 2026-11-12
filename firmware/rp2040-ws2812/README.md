@@ -16,6 +16,7 @@ Everything lives in this folder so it can later become a git submodule.
 | `ws2812_led.cc` | PIO setup, colour output, power-on sweep, activity blink.            |
 | `ws2812_test.cc`| Standalone proof-of-concept firmware (`ws2812_test.uf2`): R, G, B, W cycle, no USB. |
 | `ws2812.cmake`  | All build logic; pulled in by one line in `firmware/CMakeLists.txt`. |
+| `example_scroll_lock_layers.json` | Config-tool import: Scroll Lock cycles layers 0-3, LED white/red/green/blue. |
 
 ## API
 
@@ -36,11 +37,46 @@ C defines (`target_compile_definitions`):
 | `WS2812_NUM_LEDS`   | `1`     | LEDs in the chain.                             |
 | `WS2812_RGB_ORDER`  | `0`     | `0` = GRB (standard), `1` = RGB. Flip if red/green are swapped. |
 | `WS2812_BRIGHTNESS` | `32`    | Global brightness scale 0..255.                |
+| `WS2812_COLOR_REGISTER` | `32` | Expression register (1-32) whose value sets the LED colour; `0` disables. |
+| `WS2812_COLOR_REGISTER` | `32` | Expression register (1-32) that sets the LED colour; `0` disables. |
 
 CMake variables (set before the include, or with `-D`): `WS2812_BOARDS`
 (default `pico`) — boards whose `remapper` target gets the LED; `WS2812_PIN`
 (default `16`); `WS2812_RGB_ORDER` (default `1`: the RP2040-Zero clone used
 here has an RGB-ordered LED, confirmed on hardware).
+
+## Setting the colour from the config (expressions)
+
+The LED colour is read from hid-remapper **expression register 32** every main
+loop iteration, as `0xRRGGBB`:
+
+- `0xFF0000 32 store` in any expression makes the LED red.
+- Register value `0` (the default at power-on) = LED off, with a short green
+  flash on HID activity. Any non-zero value shows that colour steadily and the
+  activity flash is not shown.
+- Brightness is scaled by `WS2812_BRIGHTNESS`.
+
+No hid-remapper code is changed for this: the driver reads the existing global
+`registers[]` array from `remapper.cc`.
+
+### Example: Scroll Lock cycles layers, LED shows the layer (W, R, G, B)
+
+`example_scroll_lock_layers.json` (import it in the web config tool, then
+"Save to device"; it **replaces** the current config):
+
+| Expression | Text (as typed in the config tool) | Purpose |
+| --- | --- | --- |
+| 1 | `0x00070047 input_state_binary 0x00070047 prev_input_state_binary not mul 1 recall add 4 mod 1 store` | On each Scroll Lock press: register 1 = (register 1 + 1) mod 4 |
+| 2 | `1 recall 1 eq` | true when layer 1 is selected |
+| 3 | `1 recall 2 eq` | true when layer 2 is selected |
+| 4 | `1 recall 3 eq` | true when layer 3 is selected |
+| 5 | `1 recall 1 eq 0xFF0000 1 recall 2 eq 0x00FF00 1 recall 3 eq 0x0000FF 0xFFFFFF ifte ifte ifte 32 store` | LED colour: layer 0 white, 1 red, 2 green, 3 blue |
+
+Mappings (all on layers 0-3): Scroll Lock → Nothing (so the key is not sent to
+the computer), Expression 2 → Layer 1, Expression 3 → Layer 2, Expression 4 →
+Layer 3. Layer 0 is active when no other layer is. Add your own per-layer
+mappings on top. Decimal numbers are scaled ×1000 internally; hex values (like
+the colours) are used as-is.
 
 ## Changes required to integrate into hid-remapper
 

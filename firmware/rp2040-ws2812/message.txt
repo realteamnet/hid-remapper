@@ -1,8 +1,10 @@
-CLAUDE- ws2812_test: build as copy_to_ram
+CLAUDE- ws2812: LED colour from expression register 32; Scroll Lock layer example
 
-The PoC remapper.uf2 (copy_to_ram) drives the LED correctly on the
-RP2040-Zero clone, but ws2812_test.uf2 (XIP from flash) shows nothing.
-Make ws2812_test copy_to_ram as well, changing only that, to test
-whether XIP from the clone's flash chip is the cause.
+The LED now shows the colour stored in hid-remapper expression register 32
+(0xRRGGBB, e.g. `0xFF0000 32 store`). 0 = off with the green activity
+flash. Read via the existing global registers[] - no remapper changes.
+
+Add example_scroll_lock_layers.json: Scroll Lock cycles layers 0-3 and the
+LED shows white/red/green/blue for the active layer.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>

@@ -33,6 +33,34 @@ static uint64_t sweep_next = 0;
 static bool activity_lit = false;
 static uint64_t activity_off_at = 0;
 
+// Last colour pushed to the LED (0xRRGGBB), so the FIFO is only written when
+// the colour changes. shown_valid is false until the first push after the sweep.
+static uint32_t shown_rgb = 0;
+static bool shown_valid = false;
+
+#if defined(WS2812_ENABLED) && (WS2812_COLOR_REGISTER > 0)
+// hid-remapper's expression registers (remapper.cc). Expressions set the LED
+// colour with e.g. `0xFF0000 32 store`.
+extern int32_t registers[];
+
+static inline uint32_t color_from_register() {
+    return (uint32_t) registers[WS2812_COLOR_REGISTER - 1] & 0xFFFFFF;
+}
+#else
+static inline uint32_t color_from_register() {
+    return 0;
+}
+#endif
+
+static void show(uint32_t rgb) {
+    if (shown_valid && (rgb == shown_rgb)) {
+        return;
+    }
+    ws2812_led_put_rgb((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF);
+    shown_rgb = rgb;
+    shown_valid = true;
+}
+
 static inline uint8_t scale(uint8_t v) {
     return (uint8_t) (((uint16_t) v * WS2812_BRIGHTNESS) / 255);
 }
@@ -89,17 +117,21 @@ void ws2812_led_task() {
 
     if (activity_lit && (now > activity_off_at)) {
         activity_lit = false;
-        ws2812_led_put_rgb(0, 0, 0);
     }
+
+    // A non-zero colour register wins; otherwise off, with the green
+    // activity flash on top.
+    uint32_t rgb = color_from_register();
+    if (rgb == 0) {
+        rgb = activity_lit ? 0x00FF00 : 0x000000;
+    }
+    show(rgb);
 }
 
 void ws2812_led_activity_on() {
     if (!initialized || (sweep_step < SWEEP_STEPS)) {
         return;
     }
-    if (!activity_lit) {
-        ws2812_led_put_rgb(0, 255, 0);
-        activity_lit = true;
-    }
+    activity_lit = true;
     activity_off_at = time_us_64() + ACTIVITY_US;
 }

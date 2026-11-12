@@ -1,0 +1,134 @@
+{
+    "version": 18,
+    "unmapped_passthrough_layers": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+    ],
+    "partial_scroll_timeout": 1000000,
+    "tap_hold_threshold": 200000,
+    "gpio_debounce_time_ms": 5,
+    "interval_override": 0,
+    "our_descriptor_number": 0,
+    "ignore_auth_dev_inputs": false,
+    "macro_entry_duration": 1,
+    "gpio_output_mode": 0,
+    "input_labels": 0,
+    "normalize_gamepad_inputs": true,
+    "mappings": [
+        {
+            "source_usage": "0x00070047",
+            "target_usage": "0x00000000",
+            "layers": [
+                0,
+                1,
+                2,
+                3
+            ],
+            "sticky": false,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0xfff30002",
+            "target_usage": "0xfff10001",
+            "layers": [
+                0,
+                1,
+                2,
+                3
+            ],
+            "sticky": false,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0xfff30003",
+            "target_usage": "0xfff10002",
+            "layers": [
+                0,
+                1,
+                2,
+                3
+            ],
+            "sticky": false,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0xfff30004",
+            "target_usage": "0xfff10003",
+            "layers": [
+                0,
+                1,
+                2,
+                3
+            ],
+            "sticky": false,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        }
+    ],
+    "macros": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+    ],
+    "expressions": [
+        "/* Scroll Lock press: register 1 = (register 1 + 1) mod 4 */ 0x00070047 input_state_binary 0x00070047 prev_input_state_binary not mul 1000 recall add 4000 mod 1000 store",
+        "/* layer 1 active */ 1000 recall 1000 eq",
+        "/* layer 2 active */ 1000 recall 2000 eq",
+        "/* layer 3 active */ 1000 recall 3000 eq",
+        "/* LED colour -> register 32: W, R, G, B for layers 0-3 */ 1000 recall 1000 eq 0xFF0000 1000 recall 2000 eq 0x00FF00 1000 recall 3000 eq 0x0000FF 0xFFFFFF ifte ifte ifte 32000 store",
+        "",
+        "",
+        ""
+    ],
+    "quirks": []
+}

@@ -27,6 +27,13 @@
 #define WS2812_BRIGHTNESS 32
 #endif
 
+// hid-remapper expression register (1..32) whose value sets the LED colour as
+// 0xRRGGBB, e.g. `0xFF0000 32 store`. 0 in the register = off (plus the green
+// activity flash). Set to 0 to disable. Only used when WS2812_ENABLED.
+#ifndef WS2812_COLOR_REGISTER
+#define WS2812_COLOR_REGISTER 32
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
