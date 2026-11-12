@@ -1,8 +1,10 @@
-CLAUDE- ws2812 example: whole Z animation in one expression with loop state
+CLAUDE- ws2812 example: 8 layers WROYGBIV; animations on Z X C V B
 
-Merge the animation into expression 4 (comment-separated sections). Loop
-state lives in registers (29 on, 28 saved colour, 25 start time, 23
-elapsed, 24 current effect 0-4), so it always starts at the first effect.
-212/255 elements, 13/16 stack. Config and docs only.
+Scroll Lock now cycles all 8 layers (0-7; NLAYERS=4 in remapper.cc only
+affects trigger-key passthrough bookkeeping, layer masks are 8-bit), with
+layer colours white red orange yellow green blue indigo violet. Z X C V B
+each start their own animation (same key stops, other key switches); state
+in registers. Animation split over expressions 4 (state) and 5 (render)
+because one expression would exceed the 255-element limit. Config/docs only.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>

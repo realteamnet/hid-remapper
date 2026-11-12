@@ -16,7 +16,7 @@ Everything lives in this folder so it can later become a git submodule.
 | `ws2812_led.cc` | PIO setup; shows the colour the config writes to register 32. No built-in colours. |
 | `ws2812_test.cc`| Standalone proof-of-concept firmware (`ws2812_test.uf2`): R, G, B, W cycle, no USB. |
 | `ws2812.cmake`  | All build logic; pulled in by one line in `firmware/CMakeLists.txt`. |
-| `example_scroll_lock_layers.json` | Config-tool import: Scroll Lock cycles layers 0-3, LED white/red/green/blue. |
+| `example_scroll_lock_layers.json` | Example config: Scroll Lock cycles layers 0-7 (W R O Y G B I V), colour keys, Z X C V B animations. |
 
 ## API
 
@@ -61,96 +61,54 @@ No hid-remapper code is changed for this: the driver reads the existing global
 hid-remapper way: only a mapping with a "Layer N" target can activate a layer
 (one mapping per layer), and an expression can be that mapping's input.
 
-### Example: Scroll Lock cycles layers 0-3, LED white / red / green / blue
+### Example config: Scroll Lock cycles layers 0-7, colour keys, animations
 
 `example_scroll_lock_layers.json` (import it in the web config tool, then
-"Save to device"; it **replaces** the current config). Layer switching uses
-only standard sticky layer mappings; expressions set the colour.
+"Save to device"; it **replaces** the current config). Everything below is
+config; the firmware only displays register 32.
 
-Mappings (all **Sticky**):
+**Layers (W R O Y G B I V).** Mappings: Scroll Lock → Layer k+1, **sticky**, on
+layer k, for k = 0-6, plus Scroll Lock → Nothing on layer 7. Each press latches
+the next layer and releases the current one; on layer 7 nothing latches, the
+release clears it and layer 0 is back. Expression 1 sets the layer colour only
+when `layer_state` changes (register 30 = last state), as a sum of
+`layer_state 0x.. eq <colour> mul` terms: 0 white, 1 red, 2 orange, 3 yellow,
+4 green, 5 blue, 6 indigo, 7 violet (intensity 0x20).
 
-| Input | Output | Layers |
-| --- | --- | --- |
-| Scroll Lock | Layer 1 | 0 |
-| Scroll Lock | Layer 2 | 1 |
-| Scroll Lock | Layer 3 | 2 |
+hid-remapper supports 8 layers (0-7): all layer masks are 8-bit. The
+`NLAYERS = 4` constant in `remapper.cc` only affects whether a layer-trigger key
+counts as mapped on its target layer (layers 0-3); hence the extra Scroll Lock →
+Nothing mapping on layer 7, so the key never reaches the computer.
 
-Each press latches the next layer and releases the current one; on layer 3 no
-mapping is active, the release rule clears layer 3 and layer 0 is back. To use
-another key, change the input of the three mappings.
+**Colour keys (any layer).** Expression 2: Q W E R T Y U = red orange yellow
+green blue indigo violet at intensity 0x20. Expression 3: A S D F G H J = the
+same at full intensity 0xFF. The last event wins (key colour stays until the
+next colour key or layer change). These keys still type normally.
 
-Expressions (as typed in the config tool):
-
-```
-Expression 1: on a layer change, set the layer colour (register 30 = last layer_state)
-layer_state 30 recall eq           layer unchanged?
-32 recall                          THEN keep the current colour
-layer_state 0x02 eq 0x20FF0000     ELSE IF layer 1: red
-layer_state 0x04 eq 0x2000FF00          IF layer 2: green
-layer_state 0x08 eq 0x200000FF          IF layer 3: blue
-0x20FFFFFF                              ELSE (layer 0): white
-ifte ifte ifte
-ifte
-32 store
-layer_state 30 store
-
-Expression 2: keys Q W E R T Y U set red orange yellow green blue indigo violet
-0x00070014 input_state_binary 0x20FF0000     Q: red
-0x0007001a input_state_binary 0x20FF7F00     W: orange
-0x00070008 input_state_binary 0x20FFFF00     E: yellow
-0x00070015 input_state_binary 0x2000FF00     R: green
-0x00070017 input_state_binary 0x200000FF     T: blue
-0x0007001c input_state_binary 0x204B0082     Y: indigo
-0x00070018 input_state_binary 0x208B00FF     U: violet
-32 recall                                    otherwise keep the current colour
-ifte ifte ifte ifte ifte ifte ifte
-32 store
-
-Expression 3: keys A S D F G H J, same colours at full intensity (0xFF)
-0x00070004 input_state_binary 0xFFFF0000     A: red
-0x00070016 input_state_binary 0xFFFF7F00     S: orange
-0x00070007 input_state_binary 0xFFFFFF00     D: yellow
-0x00070009 input_state_binary 0xFF00FF00     F: green
-0x0007000a input_state_binary 0xFF0000FF     G: blue
-0x0007000b input_state_binary 0xFF4B0082     H: indigo
-0x0007000d input_state_binary 0xFF8B00FF     J: violet
-32 recall
-ifte ifte ifte ifte ifte ifte ifte
-32 store
-```
-
-Expression 4: **Z** toggles a test animation (any layer), all in one
-expression, separated into sections by `/* comments */`. State is kept in
-registers so the loop always starts at the first effect and the current effect
-is remembered:
+**Animations on Z X C V B (any layer).** A key starts its animation, the same
+key again stops it, another key switches. Z red strobe 10 Hz, X green blink
+2 Hz (full intensity), C police red/blue 4 Hz, V blue breathing (2 s), B
+rainbow (1 cycle/s). The colour from before is restored when it stops.
 
 | Register | Meaning |
 | --- | --- |
-| 29 | animation on (1) / off (0), toggled by each Z press |
-| 28 | LED colour saved when the animation starts, restored when it stops |
-| 25 | `time_sec` when the animation started |
-| 23 | elapsed seconds since start |
-| 24 | current effect 0-4 = floor((elapsed mod 10) / 2) |
+| 29 | running animation: 0 none, 1-5 = Z X C V B |
+| 21 | new value of 29 computed this tick |
+| 28 | colour saved when an animation starts, restored when it stops |
+| 25 | `time_sec` when the current animation started |
+| 23 | seconds since it started (drives blink phase etc.) |
+| 30 | last `layer_state` (expression 1) |
+| 32 | LED colour `0xIIRRGGBB` |
 
-Effects (2 s each, then repeat): 0 red strobe 10 Hz, 1 green blink 2 Hz at full
-intensity, 2 police red/blue 4 Hz, 3 blue breathing (intensity 1-255, 2 s per
-breath), 4 rainbow (R/G/B sines 120 degrees apart, 1 cycle/s). Z still types
-normally.
+Expression 4 = key handling and state, expression 5 = rendering. Together they
+are 268 elements, more than the **255 per expression** limit, so they are split.
 
-Limits to keep in mind when editing: an expression holds at most **255
-elements** (`eol` line breaks count, comments don't; this one uses 212) and the
-stack is **16** deep (this one peaks at 13). `time_sec` is milliseconds on the
-x1000 scale (wraps after ~24 days), `sin` takes degrees, `round` gives whole
-numbers, so `round(x) 0x10000 mul` places a 0-255 value in the red byte and
-`0x1000000 mul` in the intensity byte.
-
-(The notes are explanation only.) The last event wins: a colour key sets the
-LED until the next colour key or layer change; changing layer sets the layer
-colour. The colour keys work on every layer and still type normally (map them
-to Nothing if you don't want that). `layer_state` is the active-layer bit mask
-(layer 0 = 0x01, 1 = 0x02, 2 = 0x04, 3 = 0x08). Colours are `0xIIRRGGBB`.
-Expressions 2 and 3 each use 15 of the 16 stack slots, so each holds at most 7
-keys; put more keys in another expression.
+Limits when editing: at most **255 elements** per expression (`eol` line breaks
+count, comments don't) and a **16**-deep stack. `time_sec` is milliseconds on
+the x1000 scale (wraps after ~24 days), `sin` takes degrees, `round` gives
+whole numbers, so `round(x) 0x10000 mul` places a 0-255 value in the red byte
+and `0x1000000 mul` in the intensity byte. Decimal numbers are x1000
+internally; hex values are used as-is.
 
 ## Changes required to integrate into hid-remapper
 
