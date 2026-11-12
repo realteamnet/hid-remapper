@@ -124,6 +124,34 @@ const ops = {
 
 const opcodes = Object.fromEntries(Object.entries(ops).map(([key, value]) => [value, key]));
 
+// WS2812 LED colors for expressions: "cyan" -> 0x0000ffff, "cyan:40" -> 0x4000ffff
+const led_colors = {
+    'off': 0x000000,
+    'white': 0xFFFFFF,
+    'warmwhite': 0xFFC0A0,
+    'red': 0xFF0000,
+    'orange': 0xFF2800,
+    'yellow': 0xFF9000,
+    'lime': 0x80FF00,
+    'green': 0x00FF00,
+    'teal': 0x00FF60,
+    'cyan': 0x00FFFF,
+    'blue': 0x0000FF,
+    'purple': 0x8000FF,
+    'magenta': 0xFF00FF,
+    'pink': 0xFF0040,
+};
+
+function led_color_to_hex(op) {
+    const match = /^([a-z]+)(?::([0-9a-f]{1,2}))?$/i.exec(op);
+    if ((match === null) || !(match[1].toLowerCase() in led_colors)) {
+        return null;
+    }
+    const intensity = (match[2] === undefined) ? 0 : parseInt(match[2], 16);
+    const value = ((intensity << 24) >>> 0) + led_colors[match[1].toLowerCase()];
+    return '0x' + value.toString(16).padStart(8, '0');
+}
+
 const expr_re = /((?:\/\*.*?\*\/)?)((?:(?!\/\*).)*)/gs;
 
 const UINT8 = Symbol('uint8');
@@ -1095,6 +1123,10 @@ function expression_onchange(i) {
         }
         if ((op.toUpperCase() in ops) && !['PUSH', 'PUSH_USAGE'].includes(op.toUpperCase())) {
             return op.toLowerCase();
+        }
+        const led_color = led_color_to_hex(op);
+        if (led_color !== null) {
+            return led_color;
         }
         throw new Error('Invalid expression: "' + op + '"');
     }

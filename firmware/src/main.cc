@@ -28,6 +28,9 @@
 #include "platform.h"
 #include "remapper.h"
 #include "tick.h"
+#ifdef WS2812_ENABLED
+#include "ws2812_led.h"
+#endif
 
 // RP2350 UF2s wipe the last sector of flash every time
 // because of RP2350-E10 errata mitigation. So we put
@@ -321,6 +324,9 @@ int main() {
         print_stats_maybe();
 
         activity_led_off_maybe();
+#ifdef WS2812_ENABLED
+        ws2812_led_task();
+#endif
     }
 
     return 0;
