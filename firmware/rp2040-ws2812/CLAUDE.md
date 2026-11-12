@@ -25,7 +25,14 @@ Test hardware: Waveshare RP2040-Zero clone, WS2812 on GPIO16, RGB order
 Docs outside the repo, in `D:\Devkit\hid-remapper-led\.claude\`:
 `ws2812-implementation.md` (how it works), `ws2812-changelog.md` (every change
 and why — keep it updated), `roadmap.md` (planned features and open to-dos),
-`bug-nlayers.md` (fork bug fix).
+`bug-nlayers.md` (fork bug fix), `vdisk-implementation.md` (configuration drive).
+
+Sister module: `firmware/rp2040-vdisk/` (USB configuration drive: live
+`config.json`, `APPLY` drop folder). It has its own `README.md`; the rules
+below apply to it too. Its upstream edits: one include line in
+`CMakeLists.txt`, `#ifndef` around `CFG_TUD_MSC` in
+`src/tusb_config_both/tusb_config.h`, and `#ifdef VDISK_ENABLED` blocks in
+`src/tinyusb_stuff.cc` and `src/main.cc`.
 
 ## Rules
 
@@ -64,6 +71,9 @@ and why — keep it updated), `roadmap.md` (planned features and open to-dos),
 
 - Fork: `origin` = github.com/realteamnet/hid-remapper (`master`);
   `upstream` = github.com/jfedor2/hid-remapper (remote added locally).
+- Docker Desktop is installed: code that doesn't need the Pico SDK (e.g.
+  `vdisk.cc` with the real `config.cc`) can be compiled and tested in a
+  container with stub headers. Keep such tests in the scratchpad, not the repo.
 - No local cross-compiler (Windows cross builds failed; WSL Ubuntu has no ARM
   toolchain) — build on GitHub Actions (`build-rp2040`). Triggers on
   `firmware/**` or `.github/workflows/*.yml` pushes. Builds the `pico` target
@@ -106,9 +116,12 @@ and why — keep it updated), `roadmap.md` (planned features and open to-dos),
 - Decimal literals are ×1000 internally; hex literals are raw (sent as UINT32,
   so `0xFF......` is fine). JSON exports store decimals already ×1000.
 - `store`/`recall` index registers 1-32; `layer_state` is a raw bit mask.
-- Limits: **255 elements per expression** (`uint8_t expr_len`; `eol` counts,
-  comments don't), **16-deep stack**, 8 expressions, all evaluated every 1 ms in
-  order, after layer computation.
+- Limits: **16-deep stack**; 8 expressions, all evaluated every 1 ms in order,
+  after layer computation. No per-expression length limit in config v18 (the
+  255 figure in older notes came from the v6 loader); the whole config must fit
+  `PERSISTED_CONFIG_SIZE` (4096): 1 byte per op, 5 per number/hex.
+- `N port` sets the hub port for later inputs and `plugged_in`; it is reset only
+  once per tick, so end an expression that uses it with `0 port`.
 - `time_sec` = ms frame counter (seconds ×1000, wraps ~24 days); `time` wraps
   ~35 min; `sin` takes degrees; `round` → whole units (still ×1000, so multiply
   by a hex constant such as `0x10000` or `0x1` to get a raw value).
@@ -121,6 +134,7 @@ and why — keep it updated), `roadmap.md` (planned features and open to-dos),
 - Confirmed on hardware (older builds): PIO driver in `remapper.uf2`, RGB order,
   USB enumeration.
 - **Not yet confirmed on hardware:** the dormant/any-board driver, register
-  31/32 control, the example config (8-layer cycle, colour keys, animations —
-  checked only in a since-deleted simulator), the palette values, the NLAYERS
-  fix and colour names in the web tool.
+  31/32 control, the example config (8-layer cycle; F1-F5 modes with keys 1-0;
+  hub-port and gamepad modes — checked only in a throw-away simulator), the
+  palette values, the NLAYERS fix, colour names in the web tool, and the whole
+  configuration drive (checked only on a PC against mtools/fsck.fat).

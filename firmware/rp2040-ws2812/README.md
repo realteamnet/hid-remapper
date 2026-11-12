@@ -124,58 +124,99 @@ and `WS2812_NUM_LEDS` (`1`; all LEDs show the same colour).
 "Save to device". It **replaces** the current config. It is written for GPIO16
 with RGB order; change the first line of expression 1 for another board.
 
+### What the keys do
+
+All keys still reach the computer, except Scroll Lock.
+
+| Key | Mode | In that mode |
+| --- | --- | --- |
+| F1 | Colour map, full brightness | Keys 1-9 pick a colour, 0 turns the LED off. |
+| F2 | Colour map, low brightness (the power-on mode) | The same, at intensity 0x20. |
+| F3 | Hub ports | Shows which hub ports (1-8) have a device, 0.6 s each, in turn. Port 1 is colour 1, port 2 is colour 2, and so on. |
+| F4 | Animations | Keys 1-5 start an animation, 0 stops it. |
+| F5 | Gamepad | Each button lights its own colour while it is held. With no button held, the sticks set the colour. |
+| F6-F12 | Unused | The LED keeps the picked colour; the number keys do nothing. |
+
+- **Brightness.** F1 and F2 also set the brightness used by modes 3 and 5 and
+  by F6-F12.
+- **Scroll Lock** steps through the 8 layers. Each layer change picks colour
+  1-8 (layer 0 = white ... layer 7 = magenta), as a number key would.
+
+| Index | Colour | Index | Colour |
+| --- | --- | --- | --- |
+| 1 | white `FFFFFF` | 8 | magenta `FF00FF` |
+| 2 | red `FF0000` | 9 | pink `FF0040` |
+| 3 | orange `FF2800` | 0 / 10 | off |
+| 4 | yellow `FF9000` | 11 | lime `80FF00` |
+| 5 | green `00FF00` | 12 | teal `00FF60` |
+| 6 | cyan `00FFFF` | 13 | purple `8000FF` |
+| 7 | blue `0000FF` | 14 | warm white `FFC0A0` |
+
+Keys 1-9 and 0, layers and hub ports use indexes 1-10. Gamepad buttons 1-9 use
+indexes 1-9 and buttons 10-13 use 11-14.
+
+| Key in mode 4 | Animation |
+| --- | --- |
+| 1 | red strobe, 10 Hz |
+| 2 | green blink, 2 Hz, full intensity |
+| 3 | police red/blue, 4 Hz |
+| 4 | blue breathing, 2 s per breath |
+| 5 | rainbow, 1 cycle per second |
+
+- An animation keeps its place when another mode is selected, and continues
+  when F4 is pressed again.
+- **Gamepad.** If several buttons are held, the highest-numbered one wins. The
+  D-pad is not used. The stick direction is the hue and the deflection is the
+  brightness; both sticks are added together (left = X/Y, right = Z/Rz, as
+  hid-remapper normalises gamepads).
+
+### How it is built
+
 **Layers.** Seven sticky mappings, Scroll Lock → Layer k+1 on layer k
 (k = 0-6). Each press latches the next layer and releases the current one. On
-layer 7 nothing latches, the release clears it, and layer 0 is back. Scroll
-Lock is not sent to the computer.
+layer 7 nothing latches, the release clears it, and layer 0 is back.
 
-**Expression 1** (160 of 255 elements, stack 15 of 16), in order:
+Every colour source produces a palette **index**, and one expression turns the
+chosen index into a colour. The expressions run in order, every millisecond:
 
-1. `0x00012310 31 store`: the LED settings.
-2. Layer colour, written only when `layer_state` changes (register 30 holds the
-   last state), as a sum of `layer_state 0x.. eq <colour> mul` terms: 0 white,
-   1 red, 2 orange, 3 yellow, 4 green, 5 cyan, 6 blue, 7 magenta, at intensity
-   0x20.
-3. Q W E R T Y U set red, orange, yellow, green, cyan, blue, magenta at
-   intensity 0x20 on any layer.
-4. A S D F G H J set the same colours at full intensity.
-
-The last event wins: a key colour stays until the next colour key or layer
-change. The colour keys still type normally.
-
-**Expression 2** (242 of 255 elements, stack 13 of 16): animations on
-Z X C V B, on any layer. A key starts its animation, the same key stops it,
-another key switches. The colour from before is restored when it stops.
-
-| Key | Animation |
-| --- | --- |
-| Z | red strobe, 10 Hz |
-| X | green blink, 2 Hz, full intensity |
-| C | police red/blue, 4 Hz |
-| V | blue breathing, 2 s per breath |
-| B | rainbow, 1 cycle per second |
+| Expression | Elements | Stack | Job |
+| --- | --- | --- | --- |
+| 1 | 260 | 7 | LED settings; F keys → mode and brightness; number keys; layer change or number key → picked index. |
+| 2 | 168 | 13 | Animation state and the animation colour. |
+| 3 | 235 | 3 | Hub ports: counts the ports in use, then finds the n-th one for the current 0.6 s slot. Ends with `0 port`. |
+| 4 | 201 | 4 | Gamepad: button index, and the stick colour. |
+| 5 | 163 | 5 | Picks the index for the mode, looks it up in the palette, adds the brightness, and lets the stick colour or animation override it. Writes register 32. |
 
 | Register | Meaning |
 | --- | --- |
-| 21 | animation key pressed this tick (0 none, 1-5 = Z X C V B) |
-| 22 | next value of register 29 |
-| 23 | seconds since the animation started |
-| 24 | rainbow angle |
-| 25 | `time_sec` when the animation started |
-| 28 | colour saved when an animation starts |
-| 29 | running animation (0 none, 1-5) |
+| 9, 10, 11 | stick hue angle, Y, X |
+| 12, 14, 15 | hub ports: current slot, running count, ports in use |
+| 13 | number key pressed while in mode 4 |
+| 16 | gamepad button index (0 = none) |
+| 17 | F key held (1-12, 0 = none) |
+| 18 | number key held (1-9, 10 for the 0 key, 0 = none) |
+| 19 | brightness as `0xII000000` |
+| 20 | mode (1-12) |
+| 21 | index being shown |
+| 22 | stick colour |
+| 23, 24, 25 | animation: elapsed time, rainbow angle, start time |
+| 26 | hub port being shown |
+| 27 | animation colour |
+| 28 | picked index (number key or layer) |
+| 29 | running animation (0 = none) |
 | 30 | last `layer_state` |
 | 31, 32 | LED settings and colour |
 
-Expression 2 runs after expression 1, so a running animation overrides the
-layer and key colours.
-
-**Limits when editing.** An expression holds at most **255 elements** (`eol`
-line breaks count, comments don't) and the stack is **16** deep. Decimal
-numbers are x1000 internally; hex values are used as-is. `time_sec` is in
-milliseconds on that scale and wraps after about 24 days. `sin` takes degrees.
-`round` gives whole numbers, so `round 0x10000 mul` places a 0-255 value in the
-red byte and `round 0x1000000 mul` in the intensity byte.
+**Limits when editing.** The stack is **16** deep. There is no limit on the
+length of one expression, but the whole config must fit in 4096 bytes when
+saved: each word costs 1 byte and each number or hex value 5 bytes (this
+example's expressions use 2471). Decimal numbers are x1000 internally; hex
+values are used as-is. `time_sec` is in milliseconds on that scale and wraps
+after about 24 days. `sin` takes degrees. `round` gives whole numbers, so
+`round 0x10000 mul` places a 0-255 value in the red byte and
+`round 0x1000000 mul` in the intensity byte. `N port` makes the following
+inputs and `plugged_in` refer to hub port N until the next `port`; it carries
+over into later expressions, so reset it with `0 port`.
 
 **Layers 4-7.** The example needs `NLAYERS = 8` in `firmware/src/remapper.cc`.
 With the old value of 4, sticky layer keys leak to the computer on layers 4-7
