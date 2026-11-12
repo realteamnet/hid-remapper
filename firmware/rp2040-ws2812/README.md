@@ -65,7 +65,7 @@ hid-remapper way: only a mapping with a "Layer N" target can activate a layer
 
 `example_scroll_lock_layers.json` (import it in the web config tool, then
 "Save to device"; it **replaces** the current config). Layer switching uses
-only standard sticky layer mappings; three expressions set the colour.
+only standard sticky layer mappings; expressions set the colour.
 
 Mappings (all **Sticky**):
 
@@ -119,30 +119,30 @@ ifte ifte ifte ifte ifte ifte ifte
 32 store
 ```
 
-Expressions 4-6: **Z** toggles a test animation (any layer), all in config:
+Expression 4: **Z** toggles a test animation (any layer), all in one
+expression, separated into sections by `/* comments */`. State is kept in
+registers so the loop always starts at the first effect and the current effect
+is remembered:
 
-```
-Expression 4: Z toggles register 29 (animation on/off); saves the LED colour in
-register 28 when it starts and restores it when it stops.
+| Register | Meaning |
+| --- | --- |
+| 29 | animation on (1) / off (0), toggled by each Z press |
+| 28 | LED colour saved when the animation starts, restored when it stops |
+| 25 | `time_sec` when the animation started |
+| 23 | elapsed seconds since start |
+| 24 | current effect 0-4 = floor((elapsed mod 10) / 2) |
 
-Expression 5: precomputes two effects
-  rainbow   R,G,B = round((sin(phase + 0/120/240 deg) + 1) * 127.5), 1 cycle/s,
-            intensity 0x60                                        -> register 27
-  breathing blue, intensity round((sin + 1) * 127 + 1), 2 s/breath -> register 26
+Effects (2 s each, then repeat): 0 red strobe 10 Hz, 1 green blink 2 Hz at full
+intensity, 2 police red/blue 4 Hz, 3 blue breathing (intensity 1-255, 2 s per
+breath), 4 rainbow (R/G/B sines 120 degrees apart, 1 cycle/s). Z still types
+normally.
 
-Expression 6: while register 29 is on, every 10 s:
-  0-2 s  red strobe 10 Hz          (time_sec 0.1 mod 0.05 lt ...)
-  2-4 s  green blink 2 Hz, full intensity
-  4-6 s  police red/blue 4 Hz
-  6-8 s  blue breathing            (register 26)
-  8-10 s rainbow                   (register 27)
-  -> register 32; when off it writes register 32 back unchanged.
-```
-
-Timing uses `time_sec` (milliseconds on the ×1000 scale, wraps after ~24
-days); `sin` takes degrees; `round` gives whole numbers, so
-`round(x) 0x10000 mul` places a 0-255 value in the red byte (and
-`0x1000000 mul` in the intensity byte). Z still types normally.
+Limits to keep in mind when editing: an expression holds at most **255
+elements** (`eol` line breaks count, comments don't; this one uses 212) and the
+stack is **16** deep (this one peaks at 13). `time_sec` is milliseconds on the
+x1000 scale (wraps after ~24 days), `sin` takes degrees, `round` gives whole
+numbers, so `round(x) 0x10000 mul` places a 0-255 value in the red byte and
+`0x1000000 mul` in the intensity byte.
 
 (The notes are explanation only.) The last event wins: a colour key sets the
 LED until the next colour key or layer change; changing layer sets the layer

@@ -1,8 +1,8 @@
-CLAUDE- ws2812 example: Z toggles a test animation (expressions only)
+CLAUDE- ws2812 example: whole Z animation in one expression with loop state
 
-Expressions 4-6 in example_scroll_lock_layers.json: Z toggles a 10 s
-looping animation (red strobe, green blink, police red/blue, blue
-breathing, rainbow) built from time_sec/sin/round; the previous LED colour
-is restored when it stops. Config and docs only, no firmware change.
+Merge the animation into expression 4 (comment-separated sections). Loop
+state lives in registers (29 on, 28 saved colour, 25 start time, 23
+elapsed, 24 current effect 0-4), so it always starts at the first effect.
+212/255 elements, 13/16 stack. Config and docs only.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
