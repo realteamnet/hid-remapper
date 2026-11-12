@@ -12,7 +12,9 @@ in this folder.
 
 The firmware has **no colours, animations or layer logic of its own** (user
 requirement). It only displays hid-remapper **expression register 32** as
-`0xIIRRGGBB` (II = intensity, `00` = `WS2812_DEFAULT_INTENSITY`). Everything
+`0xIIRRGGBB` (II = intensity, `00` = `WS2812_DEFAULT_INTENSITY`), and takes
+its data GPIO and colour order from **register 31** (`0x000OOOPP`, PP = GPIO,
+OOO = order nibbles 1=R 2=G 3=B; 0 = build defaults). Everything
 else — per-layer colours, colour keys, animations — is done in the config with
 expressions; see `example_scroll_lock_layers.json` and `README.md`.
 
@@ -41,9 +43,9 @@ Docs outside the repo, in `D:\Devkit\hid-remapper-led\.claude\`:
 | File | Purpose |
 | --- | --- |
 | `ws2812.pio` | PIO program (converted line by line from the MicroPython `@rp2.asm_pio` sample) + `ws2812_program_init()`. |
-| `ws2812_led.h/.cc` | Driver: claims a free PIO SM, `ws2812_led_task()` shows register 32 when it changes. |
+| `ws2812_led.h/.cc` | Driver: claims a free PIO SM; `ws2812_led_task()` applies register 31 (pin/order) and shows register 32 when they change. |
 | `ws2812_test.cc` | Standalone diagnostic firmware `ws2812_test.uf2` (R/G/B/W cycle, no USB); the only hardcoded colours. |
-| `ws2812.cmake` | All build logic (remapper target hook + `ws2812_test`). Defaults: `WS2812_BOARDS=pico`, `WS2812_PIN=16`, `WS2812_RGB_ORDER=1`. |
+| `ws2812.cmake` | All build logic (remapper target hook + `ws2812_test`). Defaults: `WS2812_BOARDS=pico`, `WS2812_PIN=16`, `WS2812_COLOR_ORDER=0x123`. |
 | `example_scroll_lock_layers.json` | Example config (import in config-tool-web). |
 | `README.md` | Usage, colour format, example explanation, exact upstream edits. |
 | `message.txt` | Commit message scratch file. |

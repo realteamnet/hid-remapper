@@ -16,10 +16,12 @@
 #define WS2812_NUM_LEDS 1
 #endif
 
-// 0 = GRB byte order (standard WS2812), 1 = RGB order (some clones/batches).
-// If red and green appear swapped, flip this.
-#ifndef WS2812_RGB_ORDER
-#define WS2812_RGB_ORDER 0
+// Default colour order: three hex nibbles naming the channel sent first,
+// second and third (1 = R, 2 = G, 3 = B). 0x213 = GRB (standard WS2812),
+// 0x123 = RGB (this RP2040-Zero clone). Can be changed at runtime through
+// WS2812_SETTINGS_REGISTER.
+#ifndef WS2812_COLOR_ORDER
+#define WS2812_COLOR_ORDER 0x213
 #endif
 
 // Default intensity, 0..255, used when a colour value's intensity (II) byte
@@ -35,6 +37,15 @@
 // WS2812_ENABLED.
 #ifndef WS2812_COLOR_REGISTER
 #define WS2812_COLOR_REGISTER 32
+#endif
+
+// hid-remapper expression register (1..32) with LED settings, 0x000OOOPP:
+// PP = data GPIO (hex), OOO = colour order as in WS2812_COLOR_ORDER. e.g.
+// `0x00012310 31 store` = GPIO16, RGB. 0 (the power-on value) = build
+// defaults. Invalid fields are ignored; the PIO-USB host pins are refused.
+// Set to 0 to disable. Only used when WS2812_ENABLED.
+#ifndef WS2812_SETTINGS_REGISTER
+#define WS2812_SETTINGS_REGISTER 31
 #endif
 
 #ifdef __cplusplus

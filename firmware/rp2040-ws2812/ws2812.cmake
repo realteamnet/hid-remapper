@@ -14,10 +14,11 @@ endif()
 if(NOT DEFINED WS2812_PIN)
     set(WS2812_PIN 16)
 endif()
-# The RP2040-Zero's LED takes R, G, B byte order (confirmed on hardware:
-# a red->green->blue sweep showed green->red->blue with GRB order).
-if(NOT DEFINED WS2812_RGB_ORDER)
-    set(WS2812_RGB_ORDER 1)
+# Default colour order (1 = R, 2 = G, 3 = B, first byte sent first). The
+# RP2040-Zero clone's LED takes R, G, B (confirmed on hardware: a
+# red->green->blue sweep showed green->red->blue with GRB order).
+if(NOT DEFINED WS2812_COLOR_ORDER)
+    set(WS2812_COLOR_ORDER 0x123)
 endif()
 
 # Standalone proof-of-concept firmware: ws2812_test.uf2 (RP2040 only).
@@ -28,7 +29,7 @@ if(PICO_PLATFORM STREQUAL "rp2040")
     )
     pico_generate_pio_header(ws2812_test ${WS2812_DIR}/ws2812.pio)
     target_include_directories(ws2812_test PRIVATE ${WS2812_DIR})
-    target_compile_definitions(ws2812_test PRIVATE WS2812_PIN=${WS2812_PIN} WS2812_RGB_ORDER=${WS2812_RGB_ORDER})
+    target_compile_definitions(ws2812_test PRIVATE WS2812_PIN=${WS2812_PIN} WS2812_COLOR_ORDER=${WS2812_COLOR_ORDER})
     target_link_libraries(ws2812_test pico_stdlib hardware_pio)
     # Run from RAM like `remapper`: XIP from flash with the Pico's boot2/flash
     # settings did not run on the RP2040-Zero clone.
@@ -40,5 +41,5 @@ if(PICO_BOARD IN_LIST WS2812_BOARDS)
     target_sources(remapper PRIVATE ${WS2812_DIR}/ws2812_led.cc)
     pico_generate_pio_header(remapper ${WS2812_DIR}/ws2812.pio)
     target_include_directories(remapper PRIVATE ${WS2812_DIR})
-    target_compile_definitions(remapper PRIVATE WS2812_ENABLED WS2812_PIN=${WS2812_PIN} WS2812_RGB_ORDER=${WS2812_RGB_ORDER})
+    target_compile_definitions(remapper PRIVATE WS2812_ENABLED WS2812_PIN=${WS2812_PIN} WS2812_COLOR_ORDER=${WS2812_COLOR_ORDER})
 endif()

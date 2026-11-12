@@ -34,15 +34,15 @@ C defines (`target_compile_definitions`):
 | ------------------- | ------- | ---------------------------------------------- |
 | `WS2812_PIN`        | `16`    | Data GPIO.                                     |
 | `WS2812_NUM_LEDS`   | `1`     | LEDs in the chain.                             |
-| `WS2812_RGB_ORDER`  | `0`     | `0` = GRB (standard), `1` = RGB. Flip if red/green are swapped. |
+| `WS2812_COLOR_ORDER` | `0x213` | Default colour order: 3 nibbles, channel sent 1st/2nd/3rd (1 = R, 2 = G, 3 = B). `0x213` = GRB (standard), `0x123` = RGB. |
 | `WS2812_DEFAULT_INTENSITY` | `32` | Intensity 0..255 used when a colour's `II` byte is `00`. |
 | `WS2812_COLOR_REGISTER` | `32` | Expression register (1-32) whose value (`0xIIRRGGBB`) sets the LED; `0` disables. |
-| `WS2812_COLOR_REGISTER` | `32` | Expression register (1-32) that sets the LED colour; `0` disables. |
+| `WS2812_SETTINGS_REGISTER` | `31` | Expression register (1-32) with runtime LED settings (`0x000OOOPP`, see below); `0` disables. |
 
 CMake variables (set before the include, or with `-D`): `WS2812_BOARDS`
 (default `pico`) — boards whose `remapper` target gets the LED; `WS2812_PIN`
-(default `16`); `WS2812_RGB_ORDER` (default `1`: the RP2040-Zero clone used
-here has an RGB-ordered LED, confirmed on hardware).
+(default `16`); `WS2812_COLOR_ORDER` (default `0x123`: the RP2040-Zero clone
+used here has an RGB-ordered LED, confirmed on hardware).
 
 ## Setting the colour from the config (expressions)
 
@@ -60,6 +60,34 @@ No hid-remapper code is changed for this: the driver reads the existing global
 `registers[]` array from `remapper.cc`. Layers are still switched the normal
 hid-remapper way: only a mapping with a "Layer N" target can activate a layer
 (one mapping per layer), and an expression can be that mapping's input.
+
+### LED settings from the config: GPIO and colour order (register 31)
+
+Expression **register 31** sets the data pin and colour order at runtime, as
+`0x000OOOPP`:
+
+- `PP` = data GPIO in hex (`0x10` = GPIO16).
+- `OOO` = colour order, three nibbles naming the channel sent first, second,
+  third: 1 = R, 2 = G, 3 = B. `123` = RGB, `213` = GRB (standard WS2812),
+  `231`, `312`, ... any permutation.
+- `0` (the power-on value) = build defaults (`WS2812_PIN`,
+  `WS2812_COLOR_ORDER`).
+
+Examples: `0x00012310 31 store` = GPIO16, RGB. `0x00021305 31 store` = GPIO5,
+GRB. Put it at the start of any expression; writing it every tick is fine, the
+driver only acts when the value changes.
+
+- Changing the pin turns the LED on the old pin off, returns the old pin to a
+  plain input and moves the PIO state machine to the new pin.
+- Invalid fields are ignored (that part stays as it is): pins ≥ 30, the
+  PIO-USB host pins (GPIO0/1 on `pico`), or an order that isn't a permutation
+  of 1, 2, 3.
+- Don't use a pin that is also used in your GPIO mappings. hid-remapper still
+  treats other pins as remappable GPIOs (it may set pull-ups on them and read
+  them as inputs); that doesn't disturb the LED, but a mapping driving the same
+  pin would.
+- Intensity is not part of the order: it scales R, G and B before sending.
+  RGBW (SK6812) LEDs are not supported yet.
 
 ### Example config: Scroll Lock cycles layers 0-7, colour keys, animations
 
@@ -169,6 +197,7 @@ exclusion list under `#ifdef WS2812_ENABLED`.
 ## Verify
 
 1. Flash `ws2812_test.uf2`: LED cycles red, green, blue, white (1 s each).
-   Red/green swapped → build with `WS2812_RGB_ORDER=1`.
+   Red/green swapped → change the order (`WS2812_COLOR_ORDER`, or at runtime
+   with register 31).
 2. Flash `remapper.uf2`: LED off; USB device works as normal. Then save a
    config that writes register 32 (e.g. the example) and the LED follows it.

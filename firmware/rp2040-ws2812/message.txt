@@ -1,8 +1,10 @@
-CLAUDE- ws2812: refresh module CLAUDE.md for the current state
+CLAUDE- ws2812: runtime LED GPIO and colour order via register 31
 
-Rewrite CLAUDE.md: nothing-hardcoded rule, register 32 0xIIRRGGBB
-interface, file table, current CI (remapper + ws2812_test, ccache),
-flashing, expression limits, and what is/isn't hardware-confirmed. Fix a
-corrupted path to bug-nlayers.md. Docs only.
+Register 31 = 0x000OOOPP: PP = data GPIO, OOO = colour order nibbles
+(1=R 2=G 3=B, e.g. 123 = RGB, 213 = GRB); 0 = build defaults. Applied when
+it changes: moving pins turns the old LED off, drains the FIFO, returns the
+old pin to an input and re-inits the SM on the new pin. PIO-USB pins and
+invalid orders are refused. WS2812_RGB_ORDER (0/1) is replaced by
+WS2812_COLOR_ORDER (same nibble encoding; CMake default 0x123).
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
