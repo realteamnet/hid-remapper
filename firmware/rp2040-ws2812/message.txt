@@ -1,9 +1,0 @@
-CLAUDE- temporarily disable stock activity_led calls in main loop
-
-Comment out activity_led_on()/activity_led_off_maybe() in main.cc (they
-may interfere with the ws2812 LED); the ws2812 activity calls remain.
-To be replaced by ws2812 calls later. Also refresh CLAUDE.md to record
-the applied integration, non-blocking show/task, CI/release/token notes
-and open bring-up items.
-
-Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
