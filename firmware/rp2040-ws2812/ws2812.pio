@@ -1,40 +1,7 @@
 ;
-; WS2812 (NeoPixel) PIO program for RP2040/RP2350.
+; Copyright (c) 2020 Raspberry Pi (Trading) Ltd.
 ;
-; Converted from the MicroPython rp2 sample (Waveshare RP2040-Zero / Raspberry
-; Pi "pio_ws2812.py"), which is itself the pico-examples pio/ws2812 program.
-; Copyright (c) 2020 Raspberry Pi (Trading) Ltd. SPDX-License-Identifier: BSD-3-Clause.
-;
-; Original MicroPython:
-;
-;   @rp2.asm_pio(sideset_init=rp2.PIO.OUT_LOW, out_shiftdir=rp2.PIO.SHIFT_LEFT,
-;                autopull=True, pull_thresh=24)
-;   def ws2812():
-;       T1 = 2
-;       T2 = 5
-;       T3 = 3
-;       wrap_target()
-;       label("bitloop")
-;       out(x, 1)               .side(0)    [T3 - 1]
-;       jmp(not_x, "do_zero")   .side(1)    [T1 - 1]
-;       jmp("bitloop")          .side(1)    [T2 - 1]
-;       label("do_zero")
-;       nop()                   .side(0)    [T2 - 1]
-;       wrap()
-;
-;   sm = rp2.StateMachine(0, ws2812, freq=8_000_000, sideset_base=Pin(16))
-;
-; Mapping of the decorator / StateMachine arguments (done in C, see
-; ws2812_program_init() below):
-;   sideset_init=OUT_LOW          -> .side_set 1 + pin set as output, low
-;   out_shiftdir=SHIFT_LEFT       -> sm_config_set_out_shift(shift_right=false)
-;   autopull=True, pull_thresh=24 -> sm_config_set_out_shift(autopull=true, 24)
-;   freq=8_000_000                -> clkdiv = clk_sys / (800kHz * (T1+T2+T3))
-;   sideset_base=Pin(16)          -> sm_config_set_sideset_pins(pin)
-;
-; Each bit takes T1+T2+T3 = 10 PIO cycles = 1.25us at 800kHz:
-;   "1" bit: high for T1+T2 = 7 cycles (875ns), low for T3 = 3 cycles
-;   "0" bit: high for T1    = 2 cycles (250ns), low for T2+T3 = 8 cycles
+; SPDX-License-Identifier: BSD-3-Clause
 ;
 
 .program ws2812
@@ -46,27 +13,24 @@
 
 .wrap_target
 bitloop:
-    out x, 1       side 0 [T3 - 1] ; out(x, 1)             .side(0) [T3 - 1]
-    jmp !x do_zero side 1 [T1 - 1] ; jmp(not_x, "do_zero") .side(1) [T1 - 1]
+    out x, 1       side 0 [T3 - 1]
+    jmp !x do_zero side 1 [T1 - 1]
 do_one:
-    jmp  bitloop   side 1 [T2 - 1] ; jmp("bitloop")        .side(1) [T2 - 1]
+    jmp  bitloop   side 1 [T2 - 1]
 do_zero:
-    nop            side 0 [T2 - 1] ; nop()                 .side(0) [T2 - 1]
+    nop            side 0 [T2 - 1]
 .wrap
 
 % c-sdk {
 #include "hardware/clocks.h"
 
-// Configure state machine `sm` (program loaded at `offset`) to drive `pin` with
-// the WS2812 protocol at `freq` Hz (800000 for WS2812). `bits` is 24 for RGB
-// LEDs, 32 for RGBW (SK6812).
-static inline void ws2812_program_init(PIO pio, uint sm, uint offset, uint pin, float freq, uint bits) {
+static inline void ws2812_program_init(PIO pio, uint sm, uint offset, uint pin, float freq) {
     pio_gpio_init(pio, pin);
     pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
 
     pio_sm_config c = ws2812_program_get_default_config(offset);
     sm_config_set_sideset_pins(&c, pin);
-    sm_config_set_out_shift(&c, false, true, bits);
+    sm_config_set_out_shift(&c, false, true, 24);
     sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
 
     int cycles_per_bit = ws2812_T1 + ws2812_T2 + ws2812_T3;

@@ -124,9 +124,7 @@ const ops = {
 
 const opcodes = Object.fromEntries(Object.entries(ops).map(([key, value]) => [value, key]));
 
-// Colour names usable in expressions for the WS2812 LED module
-// (firmware/rp2040-ws2812). `cyan` becomes 0x0000FFFF and `cyan:40` becomes
-// 0x4000FFFF (intensity 0x40). Values are tuned for LEDs rather than screens.
+// WS2812 LED colors for expressions: "cyan" -> 0x0000ffff, "cyan:40" -> 0x4000ffff
 const led_colors = {
     'off': 0x000000,
     'white': 0xFFFFFF,

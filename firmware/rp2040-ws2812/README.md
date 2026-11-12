@@ -43,6 +43,9 @@ clone (WS2812 on GPIO16, RGB order) running the `pico` build.
 - Examples: `0x00012310` = GPIO16, RGB, full brightness. `0x00812310` = the same
   at level 8. `0x00000005` = GPIO5, GRB, full.
 - Writing it every tick is fine. The driver only acts when the value changes.
+- Registers keep their values until the device is power-cycled. Removing the
+  line from the config does not release the LED until then; store `0` to
+  release it straight away.
 - When the value becomes valid the driver claims a free PIO state machine and
   the pin. When the pin changes it moves. When the value goes back to 0 it turns
   the LED off, releases the state machine and program space, and restores the
@@ -67,7 +70,7 @@ clone (WS2812 on GPIO16, RGB order) running the `pico` build.
 
 ### Colour names in the web config tool
 
-This fork's `config-tool-web` accepts colour names in expressions and saves
+`config-tool-web` accepts colour names in expressions and saves
 them as hex: `cyan` becomes `0x0000FFFF`, and `cyan:40` becomes `0x4000FFFF`
 (intensity 0x40). The device and exported JSON only ever hold hex, so a config
 loaded back from the device shows hex.
@@ -93,19 +96,10 @@ hardware yet.
 | File | Purpose |
 | --- | --- |
 | `ws2812.pio` | PIO program, converted line by line from the MicroPython `@rp2.asm_pio` sample, plus `ws2812_program_init()`. |
-| `ws2812_led.h` | API and compile-time settings. |
+| `ws2812_led.h` | Compile-time settings and `ws2812_led_task()`. |
 | `ws2812_led.cc` | Driver: follows registers 31 and 32. |
 | `ws2812.cmake` | All build logic; pulled in by one line in `firmware/CMakeLists.txt`. |
-| `ws2812_test.cc` | Standalone diagnostic firmware (`ws2812_test.uf2`): R, G, B, W cycle, no USB. The only place with fixed colours. |
-| `example_scroll_lock_layers.json` | Example config, described below. |
-
-## API
-
-```c
-bool ws2812_led_configure(uint32_t settings);  // apply 0x00LOOOPP; true if the LED is active
-void ws2812_led_show(uint32_t iirrggbb);       // show a colour (no-op while inactive)
-void ws2812_led_task();                        // follow registers 31/32; call every main-loop iteration
-```
+| `ws2812_rgb_led.json` | Example config, described below. |
 
 ## Build settings
 
@@ -116,19 +110,17 @@ CMake variables (`-D...`, or set before the include):
 | `WS2812_ENABLE` | `ON` | `OFF` leaves the module out of the build. |
 | `WS2812_SETTINGS_REGISTER` | `31` | Expression register (1-32) holding the settings. |
 | `WS2812_COLOR_REGISTER` | `32` | Expression register (1-32) holding the colour. |
-| `WS2812_TEST_SETTINGS` | `0x00012310` | Settings used by `ws2812_test` only. |
 
 A project that needs registers 31/32 for something else can move them, e.g.
 `cmake -DWS2812_SETTINGS_REGISTER=7 -DWS2812_COLOR_REGISTER=8 ..`. Configs must
 then use the new numbers.
 
-C defines with defaults in `ws2812_led.h`: `WS2812_COLOR_ORDER` (`0x213`, used
-when `OOO` is `000`), `WS2812_DEFAULT_INTENSITY` (`32`), `WS2812_NUM_LEDS` (`1`;
-all LEDs show the same colour).
+C defines with defaults in `ws2812_led.h`: `WS2812_DEFAULT_INTENSITY` (`32`)
+and `WS2812_NUM_LEDS` (`1`; all LEDs show the same colour).
 
 ## Example config
 
-`example_scroll_lock_layers.json`: import it in the web config tool, then
+`ws2812_rgb_led.json`: import it in the web config tool, then
 "Save to device". It **replaces** the current config. It is written for GPIO16
 with RGB order; change the first line of expression 1 for another board.
 
@@ -185,11 +177,10 @@ milliseconds on that scale and wraps after about 24 days. `sin` takes degrees.
 `round` gives whole numbers, so `round 0x10000 mul` places a 0-255 value in the
 red byte and `round 0x1000000 mul` in the intensity byte.
 
-**Layers 4-7 on upstream firmware.** Upstream `remapper.cc` still has a stale
-`NLAYERS = 4`, which makes sticky layer keys leak to the computer on layers 4-7
-and momentary layer mappings to 4-7 flicker unless their target layer is
-ticked. This fork sets it to 8. With upstream firmware, add Scroll Lock →
-Nothing on layer 7.
+**Layers 4-7.** The example needs `NLAYERS = 8` in `firmware/src/remapper.cc`.
+With the old value of 4, sticky layer keys leak to the computer on layers 4-7
+(and momentary layer mappings to 4-7 flicker unless their target layer is
+ticked); in that case add Scroll Lock → Nothing on layer 7.
 
 ## Changes to hid-remapper's own files
 
@@ -205,8 +196,7 @@ include(rp2040-ws2812/ws2812.cmake OPTIONAL)
 ```
 
 The included file adds the driver source, the generated `ws2812.pio.h`, the
-include directory and the `WS2812_ENABLED` define to the `remapper` target, and
-defines the `ws2812_test` target (RP2040 only, built with `make ws2812_test`).
+include directory and the `WS2812_ENABLED` define to the `remapper` target.
 
 ### 2. `firmware/src/main.cc`: two guarded blocks
 
@@ -232,6 +222,25 @@ A `led_colors` table and `led_color_to_hex()` next to the `ops` table, and four
 lines in `expression_onchange()` that try a colour name before reporting an
 invalid expression. Optional; the firmware doesn't depend on it.
 
+## How it works
+
+- `ws2812_led_task()` runs once per main-loop iteration. It reads the settings
+  register and, only when the value has changed, reconfigures. While the LED is
+  not in use it returns straight after that comparison.
+- Starting: the driver asks the SDK for a free state machine on any PIO block
+  with room for the program, remembers the pin's current function, and starts
+  the PIO program on the pin. If nothing is free it stays off and tries again
+  when the settings value next changes.
+- Stopping: it sends "off", waits for the FIFO to empty plus 350 us (the last
+  pixel and the latch gap, which is up to 280 us on newer WS2812B parts),
+  disables the state machine, gives back the program space and state machine,
+  and restores the pin's previous function.
+- The registers are hid-remapper's `registers[]` array in `remapper.cc`, which
+  the expression engine writes in the same main loop, so no locking is needed.
+- `ws2812.pio` is the pico-examples WS2812 program. Each bit takes 10 PIO
+  cycles at 800 kHz: a 1 is high for 7 cycles and a 0 is high for 2. Data is
+  shifted out MSB first, 24 bits per LED.
+
 ## Resource use
 
 - Dormant: one register read and compare per main-loop iteration.
@@ -245,5 +254,3 @@ invalid expression. Optional; the firmware doesn't depend on it.
    untouched and the device works as stock.
 2. Save a config that writes registers 31 and 32 (e.g. the example): the LED
    follows it. Red and green swapped means the order is wrong; change `OOO`.
-3. `ws2812_test.uf2` checks the driver and pin without hid-remapper: the LED
-   cycles red, green, blue, white, one second each.

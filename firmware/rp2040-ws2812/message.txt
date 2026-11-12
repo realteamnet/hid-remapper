@@ -1,9 +1,12 @@
-CLAUDE- ws2812 docs: any-board/dormant design, colour names, new example
+CLAUDE- ws2812: clean up for upstream
 
-Rewrite README.md and CLAUDE.md for the current module: built on every
-board, dormant until register 31 is set, configure/show/task API, two
-main.cc blocks, web-tool colour names, the new example config (palette,
-animations in one expression) and what is still untested on hardware.
-Docs only.
+- Remove the standalone test firmware (ws2812_test.cc, its target and CI
+  build); the example config is the test.
+- Rename the example config to ws2812_rgb_led.json and shorten its comments.
+- Shrink the driver: ws2812_led_task() is the only public function, colour
+  order handled in a loop, no WS2812_COLOR_ORDER define, no inner #ifdefs.
+- static_assert that the two register numbers are 1..32 and different.
+- Trim code comments (details are in README.md); drop the comment on the
+  NLAYERS line and shorten the one in config-tool-web/code.js.
 
 Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>

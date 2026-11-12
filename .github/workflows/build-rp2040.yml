@@ -34,7 +34,7 @@ jobs:
           cd build
           cmake -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache ..
           # Only the targets in use: skip dual/serial variants.
-          make -j$(nproc) remapper ws2812_test
+          make -j$(nproc) remapper
           cd ..
           # Compile check only (not published): the LED module is built into
           # `remapper` on every board, so prove it also builds for RP2350.

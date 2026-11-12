@@ -1,0 +1,161 @@
+{
+    "version": 18,
+    "unmapped_passthrough_layers": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+    ],
+    "partial_scroll_timeout": 1000000,
+    "tap_hold_threshold": 200000,
+    "gpio_debounce_time_ms": 5,
+    "interval_override": 0,
+    "our_descriptor_number": 0,
+    "ignore_auth_dev_inputs": false,
+    "macro_entry_duration": 1,
+    "gpio_output_mode": 0,
+    "input_labels": 0,
+    "normalize_gamepad_inputs": true,
+    "mappings": [
+        {
+            "source_usage": "0x00070047",
+            "target_usage": "0xfff10001",
+            "layers": [
+                0
+            ],
+            "sticky": true,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0x00070047",
+            "target_usage": "0xfff10002",
+            "layers": [
+                1
+            ],
+            "sticky": true,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0x00070047",
+            "target_usage": "0xfff10003",
+            "layers": [
+                2
+            ],
+            "sticky": true,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0x00070047",
+            "target_usage": "0xfff10004",
+            "layers": [
+                3
+            ],
+            "sticky": true,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0x00070047",
+            "target_usage": "0xfff10005",
+            "layers": [
+                4
+            ],
+            "sticky": true,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0x00070047",
+            "target_usage": "0xfff10006",
+            "layers": [
+                5
+            ],
+            "sticky": true,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0x00070047",
+            "target_usage": "0xfff10007",
+            "layers": [
+                6
+            ],
+            "sticky": true,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        }
+    ],
+    "macros": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+    ],
+    "expressions": [
+        "/* LED on GPIO16, RGB order */ eol 0x00012310 31000 store eol /* layer colors */ eol layer_state 30000 recall eq eol 32000 recall eol layer_state 0x01 eq 0x20FFFFFF mul /* layer 0: white */ eol layer_state 0x02 eq 0x20FF0000 mul add /* layer 1: red */ eol layer_state 0x04 eq 0x20FF2800 mul add /* layer 2: orange */ eol layer_state 0x08 eq 0x20FF9000 mul add /* layer 3: yellow */ eol layer_state 0x10 eq 0x2000FF00 mul add /* layer 4: green */ eol layer_state 0x20 eq 0x2000FFFF mul add /* layer 5: cyan */ eol layer_state 0x40 eq 0x200000FF mul add /* layer 6: blue */ eol layer_state 0x80 eq 0x20FF00FF mul add /* layer 7: magenta */ eol ifte 32000 store eol layer_state 30000 store eol /* Q W E R T Y U set a color */ eol 0x00070014 input_state_binary 0x20FF0000 /* Q: red */ eol 0x0007001a input_state_binary 0x20FF2800 /* W: orange */ eol 0x00070008 input_state_binary 0x20FF9000 /* E: yellow */ eol 0x00070015 input_state_binary 0x2000FF00 /* R: green */ eol 0x00070017 input_state_binary 0x2000FFFF /* T: cyan */ eol 0x0007001c input_state_binary 0x200000FF /* Y: blue */ eol 0x00070018 input_state_binary 0x20FF00FF /* U: magenta */ eol 32000 recall eol ifte ifte ifte ifte ifte ifte ifte 32000 store eol /* A S D F G H J set a color at full intensity */ eol 0x00070004 input_state_binary 0xFFFF0000 /* A: red */ eol 0x00070016 input_state_binary 0xFFFF2800 /* S: orange */ eol 0x00070007 input_state_binary 0xFFFF9000 /* D: yellow */ eol 0x00070009 input_state_binary 0xFF00FF00 /* F: green */ eol 0x0007000a input_state_binary 0xFF00FFFF /* G: cyan */ eol 0x0007000b input_state_binary 0xFF0000FF /* H: blue */ eol 0x0007000d input_state_binary 0xFFFF00FF /* J: magenta */ eol 32000 recall eol ifte ifte ifte ifte ifte ifte ifte 32000 store",
+        "/* Z X C V B start and stop animations */ eol 0x0007001d input_state_binary 0x0007001d prev_input_state_binary not mul 0x0007001b input_state_binary 0x0007001b prev_input_state_binary not mul 2000 mul add 0x00070006 input_state_binary 0x00070006 prev_input_state_binary not mul 3000 mul add 0x00070019 input_state_binary 0x00070019 prev_input_state_binary not mul 4000 mul add 0x00070005 input_state_binary 0x00070005 prev_input_state_binary not mul 5000 mul add 21000 store eol 21000 recall not 29000 recall 21000 recall 29000 recall eq 0 21000 recall ifte ifte 22000 store eol 29000 recall not 22000 recall not not mul 32000 recall 28000 recall ifte 28000 store eol 29000 recall not not 22000 recall not mul 28000 recall 32000 recall ifte 32000 store eol 21000 recall time_sec 25000 recall ifte 25000 store eol 22000 recall 29000 store time_sec 25000 recall sub 23000 store 23000 recall 1000 mod 360000 mul 24000 store eol /* Z: red strobe 10 Hz */ 29000 recall 1000 eq 23000 recall 100 mod 50 lt 0x40FF0000 0 ifte eol /* X: green blink 2 Hz */ 29000 recall 2000 eq 23000 recall 500 mod 250 lt 0xFF00FF00 0 ifte eol /* C: police red/blue 4 Hz */ 29000 recall 3000 eq 23000 recall 250 mod 125 lt 0xFFFF0000 0xFF0000FF ifte eol /* V: blue breathing, 2 s per breath */ 29000 recall 4000 eq 23000 recall 2000 mod 180000 mul sin 1000 add 127000 mul 1000 add round 0x1000000 mul 0x000000FF add eol /* B: rainbow, 1 cycle/s */ 29000 recall 5000 eq 24000 recall sin 1000 add 127500 mul round 0x10000 mul 24000 recall 120000 add sin 1000 add 127500 mul round 0x100 mul 24000 recall 240000 add sin 1000 add 127500 mul round 0x1 mul add add 0x60000000 add eol 32000 recall eol ifte ifte ifte ifte ifte 32000 store",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+    ],
+    "quirks": []
+}
