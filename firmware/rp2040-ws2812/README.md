@@ -37,7 +37,7 @@ C defines (`target_compile_definitions`):
 | `WS2812_NUM_LEDS`   | `1`     | LEDs in the chain.                             |
 | `WS2812_RGB_ORDER`  | `0`     | `0` = GRB (standard), `1` = RGB. Flip if red/green are swapped. |
 | `WS2812_BRIGHTNESS` | `32`    | Global brightness scale 0..255.                |
-| `WS2812_COLOR_REGISTER` | `32` | Expression register (1-32) whose value sets the LED colour; `0` disables. |
+| `WS2812_COLOR_REGISTER` | `32` | Expression register (1-32) whose value (`0xBBRRGGBB`) sets the LED; `0` disables. |
 | `WS2812_COLOR_REGISTER` | `32` | Expression register (1-32) that sets the LED colour; `0` disables. |
 
 CMake variables (set before the include, or with `-D`): `WS2812_BOARDS`
@@ -48,35 +48,61 @@ here has an RGB-ordered LED, confirmed on hardware).
 ## Setting the colour from the config (expressions)
 
 The LED colour is read from hid-remapper **expression register 32** every main
-loop iteration, as `0xRRGGBB`:
+loop iteration, as **`0xBBRRGGBB`**:
 
-- `0xFF0000 32 store` in any expression makes the LED red.
-- Register value `0` (the default at power-on) = LED off, with a short green
-  flash on HID activity. Any non-zero value shows that colour steadily and the
+- `BB` = brightness (`0x01`-`0xFF`); `00` = default (`WS2812_BRIGHTNESS`), so
+  plain `0xRRGGBB` also works.
+- `0x20FF0000 32 store` in any expression = red at brightness 0x20.
+- Register value with `RRGGBB` = 0 (the default at power-on) = LED off, with a
+  short green flash on HID activity. Any other colour is shown steadily and the
   activity flash is not shown.
-- Brightness is scaled by `WS2812_BRIGHTNESS`.
 
 No hid-remapper code is changed for this: the driver reads the existing global
-`registers[]` array from `remapper.cc`.
+`registers[]` array from `remapper.cc`. Layers are still switched the normal
+hid-remapper way: only a mapping with a "Layer N" target can activate a layer
+(one mapping per layer), and an expression can be that mapping's input.
 
-### Example: Scroll Lock cycles layers, LED shows the layer (W, R, G, B)
+### Example: Scroll Lock cycles layers 0-3, LED white / red / green / blue
 
 `example_scroll_lock_layers.json` (import it in the web config tool, then
-"Save to device"; it **replaces** the current config):
+"Save to device"; it **replaces** the current config).
 
-| Expression | Text (as typed in the config tool) | Purpose |
+Mappings (all on layers 0-3):
+
+| Input | Output | Why |
 | --- | --- | --- |
-| 1 | `0x00070047 input_state_binary 0x00070047 prev_input_state_binary not mul 1 recall add 4 mod 1 store` | On each Scroll Lock press: register 1 = (register 1 + 1) mod 4 |
-| 2 | `1 recall 1 eq` | true when layer 1 is selected |
-| 3 | `1 recall 2 eq` | true when layer 2 is selected |
-| 4 | `1 recall 3 eq` | true when layer 3 is selected |
-| 5 | `1 recall 1 eq 0xFF0000 1 recall 2 eq 0x00FF00 1 recall 3 eq 0x0000FF 0xFFFFFF ifte ifte ifte 32 store` | LED colour: layer 0 white, 1 red, 2 green, 3 blue |
+| Scroll Lock | Register 2 | Picks the key in the UI; register 2 = 1 while held. Also stops the key reaching the computer. |
+| Expression 2 | Layer 1 | |
+| Expression 3 | Layer 2 | |
+| Expression 4 | Layer 3 | Layer 0 is active when no other layer is. |
 
-Mappings (all on layers 0-3): Scroll Lock → Nothing (so the key is not sent to
-the computer), Expression 2 → Layer 1, Expression 3 → Layer 2, Expression 4 →
-Layer 3. Layer 0 is active when no other layer is. Add your own per-layer
-mappings on top. Decimal numbers are scaled ×1000 internally; hex values (like
-the colours) are used as-is.
+Expressions (as typed in the config tool):
+
+```
+Expression 1 (next layer on each press, kept in register 1; register 3 = previous key state):
+2 recall 3 recall not mul
+1 recall add 4 mod
+dup 1 store
+2 recall 3 store
+
+Expression 2:  1 recall 1 eq
+Expression 3:  1 recall 2 eq
+Expression 4:  1 recall 3 eq
+
+Expression 5 (LED colour by active layer, 0xBBRRGGBB -> register 32):
+layer_state 0x02 eq 0x20FF0000     IF layer 1: red
+layer_state 0x04 eq 0x2000FF00     IF layer 2: green
+layer_state 0x08 eq 0x200000FF     IF layer 3: blue
+0x20FFFFFF                         ELSE (layer 0): white
+ifte ifte ifte
+32 store
+```
+
+(The IF/ELSE notes are explanation only; `/* comments */` are allowed in the
+tool.) `layer_state` is the active-layer bit mask (layer 0 = 0x01, 1 = 0x02,
+2 = 0x04, 3 = 0x08), so expression 5 follows the real active layer however it
+was selected. Decimal numbers are scaled ×1000 internally; hex values are used
+as-is. To change the key, change the input of the first mapping.
 
 ## Changes required to integrate into hid-remapper
 

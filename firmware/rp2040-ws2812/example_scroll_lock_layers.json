@@ -23,7 +23,7 @@
     "mappings": [
         {
             "source_usage": "0x00070047",
-            "target_usage": "0x00000000",
+            "target_usage": "0xfff50002",
             "layers": [
                 0,
                 1,
@@ -121,11 +121,11 @@
         []
     ],
     "expressions": [
-        "/* Scroll Lock press: register 1 = (register 1 + 1) mod 4 */ 0x00070047 input_state_binary 0x00070047 prev_input_state_binary not mul 1000 recall add 4000 mod 1000 store",
-        "/* layer 1 active */ 1000 recall 1000 eq",
-        "/* layer 2 active */ 1000 recall 2000 eq",
-        "/* layer 3 active */ 1000 recall 3000 eq",
-        "/* LED colour -> register 32: W, R, G, B for layers 0-3 */ 1000 recall 1000 eq 0xFF0000 1000 recall 2000 eq 0x00FF00 1000 recall 3000 eq 0x0000FF 0xFFFFFF ifte ifte ifte 32000 store",
+        "/* Key mapped to Register 2 (Scroll Lock): each press selects the next layer 0-3 (kept in register 1) */ eol 2000 recall 3000 recall not mul eol 1000 recall add 4000 mod eol dup 1000 store eol 2000 recall 3000 store",
+        "/* layer 1 selected */ 1000 recall 1000 eq",
+        "/* layer 2 selected */ 1000 recall 2000 eq",
+        "/* layer 3 selected */ 1000 recall 3000 eq",
+        "/* LED = 0xBBRRGGBB (BB = brightness, 00 = default) for the active layer -> register 32 */ eol layer_state 0x02 eq 0x20FF0000 eol layer_state 0x04 eq 0x2000FF00 eol layer_state 0x08 eq 0x200000FF eol 0x20FFFFFF eol ifte ifte ifte eol 32000 store",
         "",
         "",
         ""
