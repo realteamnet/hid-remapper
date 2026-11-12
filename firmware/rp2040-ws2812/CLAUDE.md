@@ -49,10 +49,12 @@ and its reason.
   state machines) and after `stdio_init_all()` (on `pico`, GPIO16 is UART TX;
   the PIO takes the pin over). Before init the LED can show junk/white.
 - No DMA/IRQ; blocking FIFO writes of one word per LED.
-- Colour order is selectable with `WS2812_RGB_ORDER` (not yet confirmed on
-  hardware).
+- Colour order: the board (an RP2040-Zero clone) needs **RGB** order, confirmed
+  on hardware; `ws2812.cmake` defaults `WS2812_RGB_ORDER=1`.
 
 ## Status
 
 - Old attempt backed up to `D:\Devkit\hid-remapper-led\backup\2026-11-12_pre-reset\`.
-- PoC awaiting hardware test of `ws2812_test.uf2` and `remapper.uf2`.
+- `remapper.uf2` PoC confirmed working on hardware (power-on sweep shown;
+  colour order fixed to RGB). `ws2812_test.uf2` showed solid white after the
+  UF2 auto-reboot — retest after a power cycle.

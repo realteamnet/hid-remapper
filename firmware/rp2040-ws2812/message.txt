@@ -1,15 +1,8 @@
-CLAUDE- ws2812 PoC: PIO driver, standalone test firmware, gated integration
+CLAUDE- ws2812: default to RGB colour order for the RP2040-Zero clone
 
-Re-implement WS2812 support for the Waveshare RP2040-Zero (GPIO16) in
-firmware/rp2040-ws2812:
-- ws2812.pio: line-by-line conversion of the MicroPython rp2 asm sample
-- ws2812_led.cc/.h: PIO driver (free SM auto-claimed), power-on R/G/B
-  sweep, green activity blink, WS2812_RGB_ORDER switch
-- ws2812_test.cc: standalone ws2812_test.uf2 (R,G,B,W cycle, no USB) to
-  prove the driver independently of hid-remapper
-- ws2812.cmake: all build logic
-
-Upstream edits: one include(... OPTIONAL) line in CMakeLists.txt and
-#ifdef WS2812_ENABLED blocks in main.cc. Stock activity_led calls kept.
+Hardware test of the PoC remapper.uf2 showed the power-on red->green->blue
+sweep as green->red->blue, so this board's LED takes R,G,B byte order.
+ws2812.cmake now defaults WS2812_RGB_ORDER=1 for both remapper and
+ws2812_test (C default stays 0 = standard GRB). Docs updated.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
