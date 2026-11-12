@@ -65,7 +65,7 @@ hid-remapper way: only a mapping with a "Layer N" target can activate a layer
 
 `example_scroll_lock_layers.json` (import it in the web config tool, then
 "Save to device"; it **replaces** the current config). Layer switching uses
-only standard sticky layer mappings; one expression sets the colour.
+only standard sticky layer mappings; two expressions set the colour.
 
 Mappings (all **Sticky**):
 
@@ -79,19 +79,41 @@ Each press latches the next layer and releases the current one; on layer 3 no
 mapping is active, the release rule clears layer 3 and layer 0 is back. To use
 another key, change the input of the three mappings.
 
-Expression 1 (as typed in the config tool):
+Expressions (as typed in the config tool):
 
 ```
-layer_state 0x02 eq 0x20FF0000     IF layer 1: red
-layer_state 0x04 eq 0x2000FF00     IF layer 2: green
-layer_state 0x08 eq 0x200000FF     IF layer 3: blue
-0x20FFFFFF                         ELSE (layer 0): white
+Expression 1: on a layer change, set the layer colour (register 30 = last layer_state)
+layer_state 30 recall eq           layer unchanged?
+32 recall                          THEN keep the current colour
+layer_state 0x02 eq 0x20FF0000     ELSE IF layer 1: red
+layer_state 0x04 eq 0x2000FF00          IF layer 2: green
+layer_state 0x08 eq 0x200000FF          IF layer 3: blue
+0x20FFFFFF                              ELSE (layer 0): white
 ifte ifte ifte
+ifte
+32 store
+layer_state 30 store
+
+Expression 2: keys Q W E R T Y U set red orange yellow green blue indigo violet
+0x00070014 input_state_binary 0x20FF0000     Q: red
+0x0007001a input_state_binary 0x20FF7F00     W: orange
+0x00070008 input_state_binary 0x20FFFF00     E: yellow
+0x00070015 input_state_binary 0x2000FF00     R: green
+0x00070017 input_state_binary 0x200000FF     T: blue
+0x0007001c input_state_binary 0x204B0082     Y: indigo
+0x00070018 input_state_binary 0x208B00FF     U: violet
+32 recall                                    otherwise keep the current colour
+ifte ifte ifte ifte ifte ifte ifte
 32 store
 ```
 
-(The IF/ELSE notes are explanation only.) `layer_state` is the active-layer bit
-mask (layer 0 = 0x01, 1 = 0x02, 2 = 0x04, 3 = 0x08). Colours are `0xBBRRGGBB`.
+(The notes are explanation only.) The last event wins: a colour key sets the
+LED until the next colour key or layer change; changing layer sets the layer
+colour. The colour keys work on every layer and still type normally (map them
+to Nothing if you don't want that). `layer_state` is the active-layer bit mask
+(layer 0 = 0x01, 1 = 0x02, 2 = 0x04, 3 = 0x08). Colours are `0xBBRRGGBB`.
+Expression 2 uses 15 of the 16 stack slots, so it can't take more keys; split
+extra keys into another expression.
 
 ## Changes required to integrate into hid-remapper
 
