@@ -4,75 +4,64 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// --- Compile-time configuration (override with target_compile_definitions) ---
+// WS2812 RGB LED driven entirely by the hid-remapper config. Nothing here is
+// board specific and nothing runs until the config asks for it: while the
+// settings register is 0 no PIO state machine is claimed and no pin is
+// touched.
 
-// GPIO driving the WS2812 data line (GPIO16 on the Waveshare RP2040-Zero).
-#ifndef WS2812_PIN
-#define WS2812_PIN 16
-#endif
+// --- Compile-time configuration (set from ws2812.cmake) ----------------------
 
-// Number of LEDs in the chain.
-#ifndef WS2812_NUM_LEDS
-#define WS2812_NUM_LEDS 1
-#endif
-
-// Default colour order: three hex nibbles naming the channel sent first,
-// second and third (1 = R, 2 = G, 3 = B). 0x213 = GRB (standard WS2812),
-// 0x123 = RGB (this RP2040-Zero clone). Can be changed at runtime through
-// WS2812_SETTINGS_REGISTER.
-#ifndef WS2812_COLOR_ORDER
-#define WS2812_COLOR_ORDER 0x213
-#endif
-
-// Default intensity, 0..255, used when a colour value's intensity (II) byte
-// is 0.
-#ifndef WS2812_DEFAULT_INTENSITY
-#define WS2812_DEFAULT_INTENSITY 32
-#endif
-
-// hid-remapper expression register (1..32) whose value sets the LED as
-// (set from CMake: WS2812_COLOR_REGISTER, default 32)
-// 0xIIRRGGBB (II = intensity, 00 = WS2812_DEFAULT_INTENSITY), e.g.
-// `0x20FF0000 32 store`. The firmware has no colours of its own: the LED is
-// off until the config writes this register. 0 disables. Only used when
-// WS2812_ENABLED.
-#ifndef WS2812_COLOR_REGISTER
-#define WS2812_COLOR_REGISTER 32
-#endif
-
-// hid-remapper expression register (1..32) with LED settings, 0x00LOOOPP
-// (set from CMake: WS2812_SETTINGS_REGISTER, default 31):
-// PP = data GPIO (hex), OOO = colour order as in WS2812_COLOR_ORDER, L =
-// master brightness 1 (dimmest) .. F (full), 0 = full. e.g.
-// `0x00812310 31 store` = level 8, RGB, GPIO16. 0 (the power-on value) =
-// build defaults. Invalid pin/order fields are ignored; the PIO-USB host pins
-// are refused.
-// Set to 0 to disable. Only used when WS2812_ENABLED.
+// hid-remapper expression register (1..32) holding the LED settings,
+// 0x00LOOOPP:
+//   PP  = data GPIO, hex (0x10 = GPIO16)
+//   OOO = colour order, the channel sent 1st/2nd/3rd (1 = R, 2 = G, 3 = B):
+//         213 = GRB (standard WS2812), 123 = RGB; 000 = WS2812_COLOR_ORDER
+//   L   = master brightness, 1 (dimmest) .. F (full); 0 = full
+// e.g. `0x00012310 31 store` = GPIO16, RGB, full brightness.
+// 0 (the power-on value) or an invalid value (bad order, pin out of range or
+// one of the PIO-USB host pins) = LED unused.
 #ifndef WS2812_SETTINGS_REGISTER
 #define WS2812_SETTINGS_REGISTER 31
 #endif
 
-#ifdef __cplusplus
-extern "C" {
+// hid-remapper expression register (1..32) holding the colour, 0xIIRRGGBB
+// (II = intensity, 00 = WS2812_DEFAULT_INTENSITY), e.g. `0x20FF0000 32 store`.
+#ifndef WS2812_COLOR_REGISTER
+#define WS2812_COLOR_REGISTER 32
 #endif
 
-// Claim a free PIO state machine, load the program, start it and turn the LED
-// off. Returns false if no PIO/state machine/instruction space was available
-// (the LED then stays unused, the rest of the firmware is unaffected). Call
-// after the clock is set and after other PIO users (Pico-PIO-USB) have been
-// initialised.
-bool ws2812_led_init();
+// Colour order used when the settings leave OOO as 000.
+#ifndef WS2812_COLOR_ORDER
+#define WS2812_COLOR_ORDER 0x213
+#endif
 
-// Set every LED to one colour (0..255 per channel, scaled by
-// WS2812_DEFAULT_INTENSITY) and push it to the strip immediately.
-void ws2812_led_put_rgb(uint8_t r, uint8_t g, uint8_t b);
+// Intensity, 0..255, used when a colour's II byte is 00.
+#ifndef WS2812_DEFAULT_INTENSITY
+#define WS2812_DEFAULT_INTENSITY 32
+#endif
 
-// Show the colour from WS2812_COLOR_REGISTER (pushed only when it changes).
-// Call once per main-loop iteration.
+// Number of LEDs in the chain (all show the same colour).
+#ifndef WS2812_NUM_LEDS
+#define WS2812_NUM_LEDS 1
+#endif
+
+// --- API ---------------------------------------------------------------------
+
+// Apply a settings value (format above). Claims a PIO state machine and the
+// pin when the settings become valid, moves when the pin changes and releases
+// everything (pin restored to its previous function) when they become 0 or
+// invalid. Returns true if the LED is active afterwards.
+bool ws2812_led_configure(uint32_t settings);
+
+// Show 0xIIRRGGBB on the LED. Does nothing while the LED is not active.
+void ws2812_led_show(uint32_t iirrggbb);
+
+#ifdef WS2812_ENABLED
+// Follow the two expression registers: applies the settings register when it
+// changes and shows the colour register when it changes. Call once per
+// main-loop iteration. While the settings register is 0 this only reads that
+// register and returns.
 void ws2812_led_task();
-
-#ifdef __cplusplus
-}
 #endif
 
 #endif

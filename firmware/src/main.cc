@@ -258,9 +258,6 @@ int main() {
     extra_init();
     tusb_init();
     stdio_init_all();
-#ifdef WS2812_ENABLED
-    ws2812_led_init();
-#endif
 
     tud_sof_isr_set(sof_handler);
 
