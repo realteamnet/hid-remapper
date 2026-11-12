@@ -70,8 +70,8 @@ config; the firmware only displays register 32.
 **Layers (W R O Y G B I V).** Mappings: Scroll Lock → Layer k+1, **sticky**, on
 layer k, for k = 0-6, plus Scroll Lock → Nothing on layer 7. Each press latches
 the next layer and releases the current one; on layer 7 nothing latches, the
-release clears it and layer 0 is back. Expression 1 sets the layer colour only
-when `layer_state` changes (register 30 = last state), as a sum of
+release clears it and layer 0 is back. Expression 1 (first section) sets the
+layer colour only when `layer_state` changes (register 30 = last state), as a sum of
 `layer_state 0x.. eq <colour> mul` terms: 0 white, 1 red, 2 orange, 3 yellow,
 4 green, 5 blue, 6 indigo, 7 violet (intensity 0x20).
 
@@ -80,8 +80,8 @@ hid-remapper supports 8 layers (0-7): all layer masks are 8-bit. The
 counts as mapped on its target layer (layers 0-3); hence the extra Scroll Lock →
 Nothing mapping on layer 7, so the key never reaches the computer.
 
-**Colour keys (any layer).** Expression 2: Q W E R T Y U = red orange yellow
-green blue indigo violet at intensity 0x20. Expression 3: A S D F G H J = the
+**Colour keys (any layer).** Expression 1, second section: Q W E R T Y U = red orange yellow
+green blue indigo violet at intensity 0x20. Third section: A S D F G H J = the
 same at full intensity 0xFF. The last event wins (key colour stays until the
 next colour key or layer change). These keys still type normally.
 
@@ -97,11 +97,14 @@ rainbow (1 cycle/s). The colour from before is restored when it stops.
 | 28 | colour saved when an animation starts, restored when it stops |
 | 25 | `time_sec` when the current animation started |
 | 23 | seconds since it started (drives blink phase etc.) |
-| 30 | last `layer_state` (expression 1) |
+| 30 | last `layer_state` (expression 1, layer section) |
 | 32 | LED colour `0xIIRRGGBB` |
 
-Expression 4 = key handling and state, expression 5 = rendering. Together they
-are 268 elements, more than the **255 per expression** limit, so they are split.
+Expression 1 = layer colour + colour keys (157 elements; the sections run in
+order, each ending in `store`, so they share one expression). Expression 2 =
+animation keys and state, expression 3 = animation rendering; together those
+two are 268 elements, more than the **255 per expression** limit, so they stay
+split. Order matters: the animation runs last so it overrides the other colours.
 
 Limits when editing: at most **255 elements** per expression (`eol` line breaks
 count, comments don't) and a **16**-deep stack. `time_sec` is milliseconds on

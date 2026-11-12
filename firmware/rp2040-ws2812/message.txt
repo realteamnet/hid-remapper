@@ -1,10 +1,7 @@
-CLAUDE- ws2812 example: 8 layers WROYGBIV; animations on Z X C V B
+CLAUDE- ws2812 example: merge layer colour and colour-key expressions
 
-Scroll Lock now cycles all 8 layers (0-7; NLAYERS=4 in remapper.cc only
-affects trigger-key passthrough bookkeeping, layer masks are 8-bit), with
-layer colours white red orange yellow green blue indigo violet. Z X C V B
-each start their own animation (same key stops, other key switches); state
-in registers. Animation split over expressions 4 (state) and 5 (render)
-because one expression would exceed the 255-element limit. Config/docs only.
+Expressions 1-3 (layer colour, Q-U, A-J) merged into expression 1
+(157/255 elements, stack 15/16); animation moves to expressions 2 (state)
+and 3 (render). Evaluation order unchanged. Config/docs only.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
