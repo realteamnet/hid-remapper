@@ -22,14 +22,14 @@
 #define WS2812_RGB_ORDER 0
 #endif
 
-// Default brightness scale, 0..255, used when a colour value's brightness
-// byte is 0.
-#ifndef WS2812_BRIGHTNESS
-#define WS2812_BRIGHTNESS 32
+// Default intensity, 0..255, used when a colour value's intensity (II) byte
+// is 0.
+#ifndef WS2812_DEFAULT_INTENSITY
+#define WS2812_DEFAULT_INTENSITY 32
 #endif
 
 // hid-remapper expression register (1..32) whose value sets the LED as
-// 0xBBRRGGBB (BB = brightness, 00 = WS2812_BRIGHTNESS), e.g.
+// 0xIIRRGGBB (II = intensity, 00 = WS2812_DEFAULT_INTENSITY), e.g.
 // `0x20FF0000 32 store`. The firmware has no colours of its own: the LED is
 // off until the config writes this register. 0 disables. Only used when
 // WS2812_ENABLED.
@@ -49,7 +49,7 @@ extern "C" {
 bool ws2812_led_init();
 
 // Set every LED to one colour (0..255 per channel, scaled by
-// WS2812_BRIGHTNESS) and push it to the strip immediately.
+// WS2812_DEFAULT_INTENSITY) and push it to the strip immediately.
 void ws2812_led_put_rgb(uint8_t r, uint8_t g, uint8_t b);
 
 // Show the colour from WS2812_COLOR_REGISTER (pushed only when it changes).

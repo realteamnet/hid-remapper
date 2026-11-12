@@ -11,13 +11,13 @@ static uint sm = 0;
 static uint offset = 0;
 static bool initialized = false;
 
-// Last value pushed to the LED (0xBBRRGGBB), so the FIFO is only written when
+// Last value pushed to the LED (0xIIRRGGBB), so the FIFO is only written when
 // it changes.
 static uint32_t shown = 0;
 
 #if defined(WS2812_ENABLED) && (WS2812_COLOR_REGISTER > 0)
 // hid-remapper's expression registers (remapper.cc). The config sets the LED
-// with e.g. `0x20FF0000 32 store` (brightness 0x20, red).
+// with e.g. `0x20FF0000 32 store` (intensity 0x20, red).
 extern int32_t registers[];
 
 static inline uint32_t color_from_register() {
@@ -29,17 +29,17 @@ static inline uint32_t color_from_register() {
 }
 #endif
 
-static inline uint8_t scale(uint8_t v, uint8_t brightness) {
-    return (uint8_t) (((uint16_t) v * brightness) / 255);
+static inline uint8_t scale(uint8_t v, uint8_t intensity) {
+    return (uint8_t) (((uint16_t) v * intensity) / 255);
 }
 
-static void put(uint8_t r, uint8_t g, uint8_t b, uint8_t brightness) {
+static void put(uint8_t r, uint8_t g, uint8_t b, uint8_t intensity) {
     if (!initialized) {
         return;
     }
-    r = scale(r, brightness);
-    g = scale(g, brightness);
-    b = scale(b, brightness);
+    r = scale(r, intensity);
+    g = scale(g, intensity);
+    b = scale(b, intensity);
 #if WS2812_RGB_ORDER
     uint32_t word = ((uint32_t) r << 24) | ((uint32_t) g << 16) | ((uint32_t) b << 8);
 #else
@@ -54,17 +54,17 @@ static void put(uint8_t r, uint8_t g, uint8_t b, uint8_t brightness) {
 }
 
 void ws2812_led_put_rgb(uint8_t r, uint8_t g, uint8_t b) {
-    put(r, g, b, WS2812_BRIGHTNESS);
+    put(r, g, b, WS2812_DEFAULT_INTENSITY);
 }
 
-// Show 0xBBRRGGBB. BB = brightness (0x00 = use WS2812_BRIGHTNESS).
-static void show(uint32_t bbrrggbb) {
-    uint8_t brightness = bbrrggbb >> 24;
-    if (brightness == 0) {
-        brightness = WS2812_BRIGHTNESS;
+// Show 0xIIRRGGBB. II = intensity (0x00 = use WS2812_DEFAULT_INTENSITY).
+static void show(uint32_t iirrggbb) {
+    uint8_t intensity = iirrggbb >> 24;
+    if (intensity == 0) {
+        intensity = WS2812_DEFAULT_INTENSITY;
     }
-    put((bbrrggbb >> 16) & 0xFF, (bbrrggbb >> 8) & 0xFF, bbrrggbb & 0xFF, brightness);
-    shown = bbrrggbb;
+    put((iirrggbb >> 16) & 0xFF, (iirrggbb >> 8) & 0xFF, iirrggbb & 0xFF, intensity);
+    shown = iirrggbb;
 }
 
 bool ws2812_led_init() {

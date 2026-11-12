@@ -35,8 +35,8 @@ C defines (`target_compile_definitions`):
 | `WS2812_PIN`        | `16`    | Data GPIO.                                     |
 | `WS2812_NUM_LEDS`   | `1`     | LEDs in the chain.                             |
 | `WS2812_RGB_ORDER`  | `0`     | `0` = GRB (standard), `1` = RGB. Flip if red/green are swapped. |
-| `WS2812_BRIGHTNESS` | `32`    | Global brightness scale 0..255.                |
-| `WS2812_COLOR_REGISTER` | `32` | Expression register (1-32) whose value (`0xBBRRGGBB`) sets the LED; `0` disables. |
+| `WS2812_DEFAULT_INTENSITY` | `32` | Intensity 0..255 used when a colour's `II` byte is `00`. |
+| `WS2812_COLOR_REGISTER` | `32` | Expression register (1-32) whose value (`0xIIRRGGBB`) sets the LED; `0` disables. |
 | `WS2812_COLOR_REGISTER` | `32` | Expression register (1-32) that sets the LED colour; `0` disables. |
 
 CMake variables (set before the include, or with `-D`): `WS2812_BOARDS`
@@ -47,11 +47,11 @@ here has an RGB-ordered LED, confirmed on hardware).
 ## Setting the colour from the config (expressions)
 
 The LED colour is read from hid-remapper **expression register 32** every main
-loop iteration, as **`0xBBRRGGBB`**:
+loop iteration, as **`0xIIRRGGBB`**:
 
-- `BB` = brightness (`0x01`-`0xFF`); `00` = default (`WS2812_BRIGHTNESS`), so
+- `II` = intensity (`0x01`-`0xFF`); `00` = default (`WS2812_DEFAULT_INTENSITY`), so
   plain `0xRRGGBB` also works.
-- `0x20FF0000 32 store` in any expression = red at brightness 0x20.
+- `0x20FF0000 32 store` in any expression = red at intensity 0x20.
 - The firmware has **no colours of its own**: the LED is off until the config
   writes the register (all registers are 0 at power-on), and then shows exactly
   that value. Colours per layer, toggles etc. are all done in the config.
@@ -111,7 +111,7 @@ ifte ifte ifte ifte ifte ifte ifte
 LED until the next colour key or layer change; changing layer sets the layer
 colour. The colour keys work on every layer and still type normally (map them
 to Nothing if you don't want that). `layer_state` is the active-layer bit mask
-(layer 0 = 0x01, 1 = 0x02, 2 = 0x04, 3 = 0x08). Colours are `0xBBRRGGBB`.
+(layer 0 = 0x01, 1 = 0x02, 2 = 0x04, 3 = 0x08). Colours are `0xIIRRGGBB`.
 Expression 2 uses 15 of the 16 stack slots, so it can't take more keys; split
 extra keys into another expression.
 

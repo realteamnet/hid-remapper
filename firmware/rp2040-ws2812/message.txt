@@ -1,8 +1,7 @@
-CLAUDE- ws2812 example: Q-U keys set ROYGBIV; layer colour only on change
+CLAUDE- ws2812: name colour format 0xIIRRGGBB (II = intensity)
 
-Expression 1 now sets the layer colour only when the layer changes
-(register 30 = last layer_state), so other expressions can set the LED.
-Expression 2: Q W E R T Y U set red orange yellow green blue indigo violet
-on any layer. Config only.
+"BB" for brightness was ambiguous with the blue channel. Rename to
+0xIIRRGGBB and WS2812_BRIGHTNESS -> WS2812_DEFAULT_INTENSITY in code,
+docs and the example config comments. No behaviour change.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>

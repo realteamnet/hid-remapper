@@ -56,7 +56,7 @@ and its reason.
 
 - Old attempt backed up to `D:\Devkit\hid-remapper-led\backup\2026-11-12_pre-reset\`.
 - PoC confirmed on hardware (RGB order). The LED is now purely config-driven:
-  it shows expression register 32 as 0xBBRRGGBB and has no built-in colours,
+  it shows expression register 32 as 0xIIRRGGBB and has no built-in colours,
   sweep or activity flash (user requirement: nothing hardcoded in firmware).
 - `ws2812_test.uf2` (copy_to_ram) still to be retested; it is a standalone
   diagnostic and the only place colours are hardcoded.
