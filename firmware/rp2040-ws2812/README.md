@@ -13,7 +13,7 @@ Everything lives in this folder so it can later become a git submodule.
 | --------------- | -------------------------------------------------------------------- |
 | `ws2812.pio`    | PIO assembler program, converted from the MicroPython `@rp2.asm_pio` sample, plus `ws2812_program_init()`. |
 | `ws2812_led.h`  | Public API and compile-time configuration.                           |
-| `ws2812_led.cc` | PIO setup, colour output, power-on sweep, activity blink.            |
+| `ws2812_led.cc` | PIO setup; shows the colour the config writes to register 32. No built-in colours. |
 | `ws2812_test.cc`| Standalone proof-of-concept firmware (`ws2812_test.uf2`): R, G, B, W cycle, no USB. |
 | `ws2812.cmake`  | All build logic; pulled in by one line in `firmware/CMakeLists.txt`. |
 | `example_scroll_lock_layers.json` | Config-tool import: Scroll Lock cycles layers 0-3, LED white/red/green/blue. |
@@ -21,10 +21,9 @@ Everything lives in this folder so it can later become a git submodule.
 ## API
 
 ```c
-bool ws2812_led_init();                                // claim PIO SM, start power-on sweep
+bool ws2812_led_init();                                // claim PIO SM, LED off
 void ws2812_led_put_rgb(uint8_t r, uint8_t g, uint8_t b); // set all LEDs now
 void ws2812_led_task();                                // call every main-loop iteration
-void ws2812_led_activity_on();                         // brief green flash
 ```
 
 ## Configuration
@@ -53,9 +52,9 @@ loop iteration, as **`0xBBRRGGBB`**:
 - `BB` = brightness (`0x01`-`0xFF`); `00` = default (`WS2812_BRIGHTNESS`), so
   plain `0xRRGGBB` also works.
 - `0x20FF0000 32 store` in any expression = red at brightness 0x20.
-- Register value with `RRGGBB` = 0 (the default at power-on) = LED off, with a
-  short green flash on HID activity. Any other colour is shown steadily and the
-  activity flash is not shown.
+- The firmware has **no colours of its own**: the LED is off until the config
+  writes the register (all registers are 0 at power-on), and then shows exactly
+  that value. Colours per layer, toggles etc. are all done in the config.
 
 No hid-remapper code is changed for this: the driver reads the existing global
 `registers[]` array from `remapper.cc`. Layers are still switched the normal
@@ -122,7 +121,7 @@ file adds the driver source, generates `ws2812.pio.h` with `pioasm`, adds the
 include directory and defines `WS2812_ENABLED WS2812_PIN=16` on the `remapper`
 target, and adds the `ws2812_test` executable.
 
-### 2. `firmware/src/main.cc` — four guarded blocks
+### 2. `firmware/src/main.cc` — three guarded blocks
 
 ```c
 #include "tick.h"
@@ -134,11 +133,6 @@ target, and adds the `ws2812_test` executable.
 #ifdef WS2812_ENABLED
     ws2812_led_init();          // after tusb_init() (Pico-PIO-USB has its PIO SMs)
 #endif                          // and after stdio (GPIO16 is UART TX on `pico`)
-...
-            activity_led_on();
-#ifdef WS2812_ENABLED
-            ws2812_led_activity_on();   // in both the new_report and gpio branches
-#endif
 ...
         activity_led_off_maybe();
 #ifdef WS2812_ENABLED
@@ -165,5 +159,5 @@ exclusion list under `#ifdef WS2812_ENABLED`.
 
 1. Flash `ws2812_test.uf2`: LED cycles red, green, blue, white (1 s each).
    Red/green swapped → build with `WS2812_RGB_ORDER=1`.
-2. Flash `remapper.uf2`: red → green → blue sweep at power-on, then off; green
-   flash on HID input; USB device works as normal.
+2. Flash `remapper.uf2`: LED off; USB device works as normal. Then save a
+   config that writes register 32 (e.g. the example) and the LED follows it.

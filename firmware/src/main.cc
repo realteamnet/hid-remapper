@@ -272,9 +272,6 @@ int main() {
         read_report(&new_report, &tick);
         if (new_report) {
             activity_led_on();
-#ifdef WS2812_ENABLED
-            ws2812_led_activity_on();
-#endif
         }
         if (their_descriptor_updated) {
             update_their_descriptor_derivates();
@@ -284,9 +281,6 @@ int main() {
             bool gpio_state_changed = read_gpio(time_us_64());
             if (gpio_state_changed) {
                 activity_led_on();
-#ifdef WS2812_ENABLED
-                ws2812_led_activity_on();
-#endif
             }
 #ifdef ADC_ENABLED
             read_adc();

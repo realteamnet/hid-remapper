@@ -22,14 +22,17 @@
 #define WS2812_RGB_ORDER 0
 #endif
 
-// Global brightness scale, 0..255, applied to every colour.
+// Default brightness scale, 0..255, used when a colour value's brightness
+// byte is 0.
 #ifndef WS2812_BRIGHTNESS
 #define WS2812_BRIGHTNESS 32
 #endif
 
-// hid-remapper expression register (1..32) whose value sets the LED colour as
-// 0xRRGGBB, e.g. `0xFF0000 32 store`. 0 in the register = off (plus the green
-// activity flash). Set to 0 to disable. Only used when WS2812_ENABLED.
+// hid-remapper expression register (1..32) whose value sets the LED as
+// 0xBBRRGGBB (BB = brightness, 00 = WS2812_BRIGHTNESS), e.g.
+// `0x20FF0000 32 store`. The firmware has no colours of its own: the LED is
+// off until the config writes this register. 0 disables. Only used when
+// WS2812_ENABLED.
 #ifndef WS2812_COLOR_REGISTER
 #define WS2812_COLOR_REGISTER 32
 #endif
@@ -38,23 +41,20 @@
 extern "C" {
 #endif
 
-// Claim a free PIO state machine, load the program and start it. Returns false
-// if no PIO/state machine/instruction space was available (LED then stays
-// unused, the rest of the firmware is unaffected). Call after the clock is set
-// and after other PIO users (Pico-PIO-USB) have been initialised.
-// Starts the power-on R -> G -> B sweep, which ws2812_led_task() plays out.
+// Claim a free PIO state machine, load the program, start it and turn the LED
+// off. Returns false if no PIO/state machine/instruction space was available
+// (the LED then stays unused, the rest of the firmware is unaffected). Call
+// after the clock is set and after other PIO users (Pico-PIO-USB) have been
+// initialised.
 bool ws2812_led_init();
 
 // Set every LED to one colour (0..255 per channel, scaled by
 // WS2812_BRIGHTNESS) and push it to the strip immediately.
 void ws2812_led_put_rgb(uint8_t r, uint8_t g, uint8_t b);
 
-// Non-blocking housekeeping: plays the power-on sweep and turns the activity
-// blink off. Call once per main-loop iteration.
+// Show the colour from WS2812_COLOR_REGISTER (pushed only when it changes).
+// Call once per main-loop iteration.
 void ws2812_led_task();
-
-// Flash green briefly (mirrors activity_led_on()).
-void ws2812_led_activity_on();
 
 #ifdef __cplusplus
 }
