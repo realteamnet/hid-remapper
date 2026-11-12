@@ -68,17 +68,18 @@ hid-remapper way: only a mapping with a "Layer N" target can activate a layer
 config; the firmware only displays register 32.
 
 **Layers (W R O Y G B I V).** Mappings: Scroll Lock → Layer k+1, **sticky**, on
-layer k, for k = 0-6, plus Scroll Lock → Nothing on layer 7. Each press latches
+layer k, for k = 0-6. Each press latches
 the next layer and releases the current one; on layer 7 nothing latches, the
 release clears it and layer 0 is back. Expression 1 (first section) sets the
 layer colour only when `layer_state` changes (register 30 = last state), as a sum of
 `layer_state 0x.. eq <colour> mul` terms: 0 white, 1 red, 2 orange, 3 yellow,
 4 green, 5 blue, 6 indigo, 7 violet (intensity 0x20).
 
-hid-remapper supports 8 layers (0-7): all layer masks are 8-bit. The
-`NLAYERS = 4` constant in `remapper.cc` only affects whether a layer-trigger key
-counts as mapped on its target layer (layers 0-3); hence the extra Scroll Lock →
-Nothing mapping on layer 7, so the key never reaches the computer.
+hid-remapper supports 8 layers (0-7). Upstream `remapper.cc` still had a stale
+`NLAYERS = 4`, which made sticky layer keys leak to the computer on layers 4-7
+(and momentary layer mappings to 4-7 flicker unless their target layer is
+ticked). This fork fixes it (`NLAYERS = 8`); with upstream firmware add
+Scroll Lock → Nothing on layer 7.
 
 **Colour keys (any layer).** Expression 1, second section: Q W E R T Y U = red orange yellow
 green blue indigo violet at intensity 0x20. Third section: A S D F G H J = the

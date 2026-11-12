@@ -1,7 +1,7 @@
-CLAUDE- ws2812 example: merge layer colour and colour-key expressions
+CLAUDE- ws2812 docs/example: document NLAYERS fix, drop layer-7 workaround
 
-Expressions 1-3 (layer colour, Q-U, A-J) merged into expression 1
-(157/255 elements, stack 15/16); animation moves to expressions 2 (state)
-and 3 (render). Evaluation order unchanged. Config/docs only.
+With NLAYERS fixed, sticky Scroll Lock no longer leaks to the host on
+layer 7, so the Scroll Lock -> Nothing mapping is removed from the example
+config. README and CLAUDE.md record the fix as a separate fork edit.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>

@@ -111,19 +111,6 @@
             "scaling": 1000,
             "source_port": 0,
             "target_port": 0
-        },
-        {
-            "source_usage": "0x00070047",
-            "target_usage": "0x00000000",
-            "layers": [
-                7
-            ],
-            "sticky": false,
-            "tap": false,
-            "hold": false,
-            "scaling": 1000,
-            "source_port": 0,
-            "target_port": 0
         }
     ],
     "macros": [

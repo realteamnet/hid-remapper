@@ -20,6 +20,9 @@ and its reason.
 - Upstream edits are minimal and gated: one `include(... OPTIONAL)` line in
   `firmware/CMakeLists.txt`, and `#ifdef WS2812_ENABLED` blocks in
   `firmware/src/main.cc`. Document every upstream edit in `README.md`.
+- Separate fork bug fix (not part of this module, not gated):
+  `firmware/src/remapper.cc:31` `NLAYERS = 4` → `8` (stale after upstream's
+  8-layer change 154fb33). See `D:\Devkit\hid-remapper-led\.claudeug-nlayers.md`.
 - Match hid-remapper style: 4-space indent, repo `.clang-format`.
 
 ## Repo / CI
