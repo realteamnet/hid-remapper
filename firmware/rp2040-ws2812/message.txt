@@ -1,7 +1,10 @@
-CLAUDE- ws2812: register numbers as CMake settings (default 31/32)
+CLAUDE- ws2812 example: settings line, LED-friendly palette, animations in one expression
 
-WS2812_SETTINGS_REGISTER (31) and WS2812_COLOR_REGISTER (32) are now CMake
-variables passed to the remapper target, so a project that needs those
-registers can move them (e.g. -DWS2812_COLOR_REGISTER=8). Defaults unchanged.
+- Expression 1 starts with `0x00012310 31 store` (GPIO16, RGB), required
+  now that the LED is dormant by default.
+- Palette white red orange yellow green cyan blue magenta with LED-tuned
+  orange/yellow (indigo and violet were indistinguishable).
+- All five Z X C V B animations fit in expression 2 (242/255 elements):
+  key number computed once, shared timer and rainbow angle in registers.
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
