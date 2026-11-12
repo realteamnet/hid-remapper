@@ -5,66 +5,72 @@ Guidance for working in this folder. (The project-root `CLAUDE.md` at
 
 ## What this is
 
-WS2812 RGB LED support for the hid-remapper RP2040 firmware, on a **Waveshare
-RP2040-Zero clone** (WS2812 on GPIO16, **RGB** byte order) running the `pico`
-build. Intended to become its own git submodule, so all module files stay flat
-in this folder.
+WS2812 RGB LED support for the hid-remapper RP2040/RP2350 firmware. Intended to
+become its own git submodule, so all module files stay flat in this folder.
 
-The firmware has **no colours, animations or layer logic of its own** (user
-requirement). It only displays hid-remapper **expression register 32** as
-`0xIIRRGGBB` (II = intensity, `00` = `WS2812_DEFAULT_INTENSITY`), and takes
-its data GPIO, colour order and master brightness from **register 31**
-(`0x00LOOOPP`, PP = GPIO, OOO = order nibbles 1=R 2=G 3=B, L = master level
-1-F with 0 = full; 0 = build defaults). Everything
-else — per-layer colours, colour keys, animations — is done in the config with
-expressions; see `example_scroll_lock_layers.json` and `README.md`.
+- **Any board:** built into the `remapper` target on every board; nothing board
+  specific in the code or build.
+- **Dormant by default:** while expression **register 31** is 0, no LED code
+  runs (no PIO state machine, no pin).
+- **Config-driven:** register 31 = settings `0x00LOOOPP` (PP = GPIO, OOO =
+  colour order nibbles 1=R 2=G 3=B with 000 = GRB, L = master level 1-F with
+  0 = full). Register 32 = colour `0xIIRRGGBB` (II = intensity, 00 = default).
+- **Nothing hardcoded:** no colours, animations or layer logic in firmware.
+  Those live in the config; see `example_scroll_lock_layers.json` and
+  `README.md`.
+
+Test hardware: Waveshare RP2040-Zero clone, WS2812 on GPIO16, RGB order
+(settings `0x00012310`), running the `pico` build.
 
 Docs outside the repo, in `D:\Devkit\hid-remapper-led\.claude\`:
-`ws2812-implementation.md` (how it works / how to integrate),
-`ws2812-changelog.md` (every change and why — keep it updated),
-`roadmap.md` (planned features), `bug-nlayers.md` (fork bug fix),
-`next-task-any-board.md` (next task spec).
+`ws2812-implementation.md` (how it works), `ws2812-changelog.md` (every change
+and why — keep it updated), `roadmap.md` (planned features and open to-dos),
+`bug-nlayers.md` (fork bug fix), `tools\` (example-config generator, limit
+checker and expression simulator).
 
 ## Rules
 
 - Keep module files in this folder, flat.
-- Nothing hardcoded in firmware: no built-in colours, animations or layer
-  toggles. Those belong in the config (expressions/mappings).
-- Upstream edits are minimal and gated: one `include(... OPTIONAL)` line in
-  `firmware/CMakeLists.txt`, three `#ifdef WS2812_ENABLED` blocks in
-  `firmware/src/main.cc` (include, `ws2812_led_init()`, `ws2812_led_task()`).
-  Document every upstream edit in `README.md`.
+- Nothing hardcoded in firmware: no built-in colours, animations, layer toggles,
+  pins or board lists.
+- Upstream edits are minimal and gated. Document each one in `README.md`:
+  - `firmware/CMakeLists.txt`: one `include(... OPTIONAL)` line.
+  - `firmware/src/main.cc`: two `#ifdef WS2812_ENABLED` blocks (include,
+    `ws2812_led_task()`).
+  - `config-tool-web/code.js`: LED colour names in expressions (`led_colors`,
+    `led_color_to_hex()`, 4 lines in `expression_onchange()`).
 - Separate fork bug fix (not part of this module, not gated):
-  `firmware/src/remapper.cc:31` `NLAYERS = 4` → `8` (stale after upstream's
-  8-layer change 154fb33). See `D:\Devkit\hid-remapper-led\.claude\bug-nlayers.md`.
-- Don't change hid-remapper's layer/expression engine for LED features.
+  `firmware/src/remapper.cc:31` `NLAYERS = 4` → `8`. See
+  `D:\Devkit\hid-remapper-led\.claude\bug-nlayers.md`.
+- Don't change hid-remapper's layer/expression engine for LED features without
+  asking the user.
+- Two separate registers for settings and colour (decided; don't multiplex).
+  Their numbers are CMake settings, defaults 31/32.
 - Match hid-remapper style: 4-space indent, repo `.clang-format`.
 
 ## Files
 
 | File | Purpose |
 | --- | --- |
-| `ws2812.pio` | PIO program (converted line by line from the MicroPython `@rp2.asm_pio` sample) + `ws2812_program_init()`. |
-| `ws2812_led.h/.cc` | Driver: claims a free PIO SM; `ws2812_led_task()` applies register 31 (pin/order/master level) and shows register 32 when they change. |
-| `ws2812_test.cc` | Standalone diagnostic firmware `ws2812_test.uf2` (R/G/B/W cycle, no USB); the only hardcoded colours. |
-| `ws2812.cmake` | All build logic (remapper target hook + `ws2812_test`). Defaults: `WS2812_BOARDS=pico`, `WS2812_PIN=16`, `WS2812_COLOR_ORDER=0x123`. |
-| `example_scroll_lock_layers.json` | Example config (import in config-tool-web). |
-| `README.md` | Usage, colour format, example explanation, exact upstream edits. |
+| `ws2812.pio` | PIO program (from the MicroPython `@rp2.asm_pio` sample) + `ws2812_program_init()`. |
+| `ws2812_led.h/.cc` | Driver: `ws2812_led_configure()`, `ws2812_led_show()`, `ws2812_led_task()`. |
+| `ws2812_test.cc` | Standalone diagnostic `ws2812_test.uf2` (R/G/B/W cycle, no USB); uses `WS2812_TEST_SETTINGS`. |
+| `ws2812.cmake` | All build logic. `WS2812_ENABLE`, `WS2812_SETTINGS_REGISTER`, `WS2812_COLOR_REGISTER`, `WS2812_TEST_SETTINGS`. |
+| `example_scroll_lock_layers.json` | Example config, generated by `.claude\tools\gen_example_config.py`. |
+| `README.md` | Usage, register formats, example explanation, exact upstream edits. |
 | `message.txt` | Commit message scratch file. |
 
 ## Repo / CI
 
 - Fork: `origin` = github.com/realteamnet/hid-remapper (`master`);
-  `upstream` = github.com/jfedor2/hid-remapper (remote added locally). The fork
-  differs from upstream in: this module, the 3 upstream edits above, the
-  NLAYERS fix, and `.github/workflows/build-rp2040.yml`.
+  `upstream` = github.com/jfedor2/hid-remapper (remote added locally).
 - No local cross-compiler (Windows cross builds failed; WSL Ubuntu has no ARM
   toolchain) — build on GitHub Actions (`build-rp2040`). Triggers on
-  `firmware/**` or `.github/workflows/*.yml` pushes. Builds **only** the `pico`
-  targets `remapper` and `ws2812_test` (`make -j$(nproc)`, ccache cached via
-  `actions/cache`); other boards and the PiZero build are commented out.
-  Publishes `.uf2`s to the `latest` release (old dual/serial/PiZero files there
-  are stale).
+  `firmware/**` or `.github/workflows/*.yml` pushes. Builds the `pico` targets
+  `remapper` and `ws2812_test` (published to the `latest` release) plus a
+  `pico2` (RP2350) compile check of `remapper` (not published). ccache is
+  cached with `actions/cache`. Other boards are commented out; old
+  dual/serial/PiZero files in the release are stale.
 - Commit: write `message.txt` here, `git commit -F firmware/rp2040-ws2812/message.txt`,
   prefix `CLAUDE-`, end with the Co-Authored-By line. Fetch/pull first (the
   user also pushes).
@@ -80,17 +86,20 @@ Docs outside the repo, in `D:\Devkit\hid-remapper-led\.claude\`:
 
 ## Design notes
 
-- `ws2812_led_init()` runs after `tusb_init()` (Pico-PIO-USB has claimed
-  pio0/sm0 and pio1/sm0+1) and after `stdio_init_all()` (on `pico`, GPIO16 is
-  UART TX; `pio_gpio_init()` takes the pin over). It turns the LED off, clearing
-  the white the LED latches from boot/UART noise. Uses
-  `pio_claim_free_sm_and_add_program_for_gpio_range()`.
-- No DMA/IRQ; blocking FIFO writes of one word per LED, only when register 32
-  changes.
-- Reads `extern int32_t registers[]` (global in `remapper.cc`) — no remapper
-  code changes needed for the colour.
-- GPIO16 is already excluded from remappable GPIOs on `pico` (it's the UART TX
-  pin), so `remapper_single.cc` is unchanged.
+- `ws2812_led_task()` (main loop, after `activity_led_off_maybe()`) compares
+  register 31 with the last applied value and calls `ws2812_led_configure()`
+  on change; while inactive it returns right after that compare.
+- Activation: `pio_claim_free_sm_and_add_program_for_gpio_range()` (Pico-PIO-USB
+  holds pio0/sm0 and pio1/sm0+1), remember the pin's current function,
+  `ws2812_program_init()`. Deactivation: send off, drain FIFO + 350 us latch,
+  disable SM, `pio_remove_program_and_unclaim_sm()`, restore the pin function.
+- Registers are read via `extern int32_t registers[]` (global in
+  `remapper.cc`). Same core and loop as the expression engine, so no locking.
+- No DMA/IRQ; one blocking FIFO word per LED, only when the colour changes.
+- On `pico`, GPIO16 is the debug UART TX until the LED takes it (and again
+  after it is released).
+- A runtime-chosen pin is not removed from hid-remapper's remappable GPIOs
+  (that would need an upstream edit); the README tells users not to map it.
 
 ## Expression facts (for configs)
 
@@ -101,24 +110,20 @@ Docs outside the repo, in `D:\Devkit\hid-remapper-led\.claude\`:
   comments don't), **16-deep stack**, 8 expressions, all evaluated every 1 ms in
   order, after layer computation.
 - `time_sec` = ms frame counter (seconds ×1000, wraps ~24 days); `time` wraps
-  ~35 min; `sin` takes degrees; `round` → whole units.
+  ~35 min; `sin` takes degrees; `round` → whole units (still ×1000, so multiply
+  by a hex constant such as `0x10000` or `0x1` to get a raw value).
 - Only a mapping with a "Layer N" target can activate a layer (non-zero input).
 - A mapping can output to a register ("Register N" target: 1000 while pressed).
-
-## NEXT TASK (not implemented yet)
-
-Make the module board-agnostic and **dormant unless register 31 is set** (no
-PIO/GPIO touched at all when it is 0; pin becomes mandatory in the config,
-default order GRB). Full spec and plan:
-`D:\Devkit\hid-remapper-led\.claude
-ext-task-any-board.md`.
+- After editing the example, run `.claude\tools\check_expr.py` (limits) and
+  `sim_example_config.py` (behaviour) on the JSON.
 
 ## Status
 
 - Old attempt backed up to `D:\Devkit\hid-remapper-led\backup\2026-11-12_pre-reset\`.
-- Confirmed on hardware: PIO driver works in `remapper.uf2`, RGB order, USB
-  still enumerates (via the old power-on sweep build). **Not yet confirmed on
-  hardware:** register-32 colour, the example config (8-layer cycle, colour
-  keys, Z X C V B animations) and the NLAYERS fix — built/pushed, test pending.
-- `ws2812_test.uf2` (now copy_to_ram) showed nothing when run from flash (XIP);
-  retest pending — may indicate a flash/XIP issue on this clone.
+- Confirmed on hardware (older builds): PIO driver in `remapper.uf2`, RGB order,
+  USB enumeration.
+- **Not yet confirmed on hardware:** the dormant/any-board driver, register
+  31/32 control, the example config (8-layer cycle, colour keys, animations —
+  verified only in the simulator), the palette values, the NLAYERS fix, colour
+  names in the web tool, and `ws2812_test.uf2` (copy_to_ram; it showed nothing
+  when it ran from flash, which may point to a flash/XIP issue on this clone).

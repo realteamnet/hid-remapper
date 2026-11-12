@@ -1,10 +1,9 @@
-CLAUDE- ws2812 example: settings line, LED-friendly palette, animations in one expression
+CLAUDE- ws2812 docs: any-board/dormant design, colour names, new example
 
-- Expression 1 starts with `0x00012310 31 store` (GPIO16, RGB), required
-  now that the LED is dormant by default.
-- Palette white red orange yellow green cyan blue magenta with LED-tuned
-  orange/yellow (indigo and violet were indistinguishable).
-- All five Z X C V B animations fit in expression 2 (242/255 elements):
-  key number computed once, shared timer and rainbow angle in registers.
+Rewrite README.md and CLAUDE.md for the current module: built on every
+board, dormant until register 31 is set, configure/show/task API, two
+main.cc blocks, web-tool colour names, the new example config (palette,
+animations in one expression) and what is still untested on hardware.
+Docs only.
 
 Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
