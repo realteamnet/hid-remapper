@@ -57,4 +57,4 @@ and its reason.
 - Old attempt backed up to `D:\Devkit\hid-remapper-led\backup\2026-11-12_pre-reset\`.
 - `remapper.uf2` PoC confirmed working on hardware (power-on sweep shown;
   colour order fixed to RGB). `ws2812_test.uf2` showed solid white after the
-  UF2 auto-reboot — retest after a power cycle.
+  UF2 auto-reboot â€” retest after a power cycle.

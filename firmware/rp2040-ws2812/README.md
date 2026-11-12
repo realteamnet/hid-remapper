@@ -38,7 +38,9 @@ C defines (`target_compile_definitions`):
 | `WS2812_BRIGHTNESS` | `32`    | Global brightness scale 0..255.                |
 
 CMake variables (set before the include, or with `-D`): `WS2812_BOARDS`
-(default `pico`) — boards whose `remapper` target gets the LED; `WS2812_PIN`.
+(default `pico`) — boards whose `remapper` target gets the LED; `WS2812_PIN`
+(default `16`); `WS2812_RGB_ORDER` (default `1`: the RP2040-Zero clone used
+here has an RGB-ordered LED, confirmed on hardware).
 
 ## Changes required to integrate into hid-remapper
 

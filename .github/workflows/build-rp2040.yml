@@ -17,16 +17,25 @@ jobs:
       - uses: actions/checkout@v6
         with:
           submodules: true
+      # Keep compiled objects between runs: unchanged files (pico-sdk, tinyusb,
+      # most of hid-remapper) come from the cache instead of being recompiled.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-${{ github.sha }}
+          restore-keys: ccache-
       - name: Install compiler, libraries and tools
         run: |
           sudo apt update
-          sudo apt install -y --no-install-recommends gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib srecord
+          sudo apt install -y --no-install-recommends gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib srecord ccache
       - name: Build
         run: |
           mkdir build
           cd build
-          cmake ..
-          make
+          cmake -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache ..
+          # Only the targets in use (RP2040-Zero): skip dual/serial variants.
+          make -j$(nproc) remapper ws2812_test
+          ccache -s
           cd ..
           # mkdir build-boards
           # cd build-boards
@@ -48,11 +57,11 @@ jobs:
           # PICO_BOARD=feather_host cmake ..
           # make remapper
           # cd ..
-          mkdir build-waveshare_rp2040_pizero
-          cd build-waveshare_rp2040_pizero
-          PICO_BOARD=waveshare_rp2040_pizero cmake ..
-          make remapper
-          cd ..
+          # mkdir build-waveshare_rp2040_pizero
+          # cd build-waveshare_rp2040_pizero
+          # PICO_BOARD=waveshare_rp2040_pizero cmake ..
+          # make remapper
+          # cd ..
           # mkdir build-pico2
           # cd build-pico2
           # PICO_BOARD=pico2 cmake ..
@@ -90,12 +99,12 @@ jobs:
           # cd ..
           mkdir artifacts
           mv build/*.uf2 artifacts
-          rm artifacts/flash_b_side.uf2
+          rm -f artifacts/flash_b_side.uf2
           # mv build-boards/remapper_dual_combined.uf2 artifacts/remapper_board.uf2
           # mv build-board_v7/remapper_dual_combined.uf2 artifacts/remapper_board_v7.uf2
           # mv build-board_v8/remapper.uf2 artifacts/remapper_board_v8.uf2
           # mv build-feather/remapper.uf2 artifacts/remapper_feather.uf2
-          mv build-waveshare_rp2040_pizero/remapper.uf2 artifacts/remapper_waveshare_rp2040_pizero.uf2
+          # mv build-waveshare_rp2040_pizero/remapper.uf2 artifacts/remapper_waveshare_rp2040_pizero.uf2
           # mv build-pico2/remapper.uf2 artifacts/remapper_pico2.uf2
           # mv build-pico2/remapper_dual_a.uf2 artifacts/remapper_pico2_dual_a.uf2
           # mv build-pico2/remapper_dual_b.uf2 artifacts/remapper_pico2_dual_b.uf2

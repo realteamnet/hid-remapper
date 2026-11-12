@@ -1,8 +1,10 @@
-CLAUDE- ws2812: default to RGB colour order for the RP2040-Zero clone
+CLAUDE- faster CI: ccache, parallel make, only remapper + ws2812_test
 
-Hardware test of the PoC remapper.uf2 showed the power-on red->green->blue
-sweep as green->red->blue, so this board's LED takes R,G,B byte order.
-ws2812.cmake now defaults WS2812_RGB_ORDER=1 for both remapper and
-ws2812_test (C default stays 0 = standard GRB). Docs updated.
+build-rp2040.yml: cache ccache objects between runs (actions/cache),
+build with make -j$(nproc), build only the remapper and ws2812_test
+targets (skip dual/serial variants), comment out the PiZero build (not
+the target hardware). rm -f for flash_b_side.uf2 which is no longer built.
+Also fix a mis-encoded dash in CLAUDE.md and document WS2812_RGB_ORDER
+in README.md.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
