@@ -21,6 +21,16 @@ if(NOT DEFINED WS2812_COLOR_ORDER)
     set(WS2812_COLOR_ORDER 0x123)
 endif()
 
+# Expression registers (1-32) the LED reads: settings 0x00LOOOPP and colour
+# 0xIIRRGGBB. Change these if a config/project needs registers 31/32 for
+# something else, e.g. cmake -DWS2812_COLOR_REGISTER=8 -DWS2812_SETTINGS_REGISTER=7.
+if(NOT DEFINED WS2812_SETTINGS_REGISTER)
+    set(WS2812_SETTINGS_REGISTER 31)
+endif()
+if(NOT DEFINED WS2812_COLOR_REGISTER)
+    set(WS2812_COLOR_REGISTER 32)
+endif()
+
 # Standalone proof-of-concept firmware: ws2812_test.uf2 (RP2040 only).
 if(PICO_PLATFORM STREQUAL "rp2040")
     add_executable(ws2812_test
@@ -41,5 +51,10 @@ if(PICO_BOARD IN_LIST WS2812_BOARDS)
     target_sources(remapper PRIVATE ${WS2812_DIR}/ws2812_led.cc)
     pico_generate_pio_header(remapper ${WS2812_DIR}/ws2812.pio)
     target_include_directories(remapper PRIVATE ${WS2812_DIR})
-    target_compile_definitions(remapper PRIVATE WS2812_ENABLED WS2812_PIN=${WS2812_PIN} WS2812_COLOR_ORDER=${WS2812_COLOR_ORDER})
+    target_compile_definitions(remapper PRIVATE
+        WS2812_ENABLED
+        WS2812_PIN=${WS2812_PIN}
+        WS2812_COLOR_ORDER=${WS2812_COLOR_ORDER}
+        WS2812_SETTINGS_REGISTER=${WS2812_SETTINGS_REGISTER}
+        WS2812_COLOR_REGISTER=${WS2812_COLOR_REGISTER})
 endif()

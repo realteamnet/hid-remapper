@@ -39,7 +39,13 @@ C defines (`target_compile_definitions`):
 | `WS2812_COLOR_REGISTER` | `32` | Expression register (1-32) whose value (`0xIIRRGGBB`) sets the LED; `0` disables. |
 | `WS2812_SETTINGS_REGISTER` | `31` | Expression register (1-32) with runtime LED settings (`0x00LOOOPP`, see below); `0` disables. |
 
-CMake variables (set before the include, or with `-D`): `WS2812_BOARDS`
+The two register numbers are build settings, so a project that needs
+registers 31/32 for something else can move them without code changes:
+`cmake -DWS2812_SETTINGS_REGISTER=7 -DWS2812_COLOR_REGISTER=8 ..` (any 1-32;
+`0` disables that register). Configs must then use the new numbers.
+
+CMake variables (set before the include, or with `-D`): `WS2812_SETTINGS_REGISTER`
+(default `31`), `WS2812_COLOR_REGISTER` (default `32`), `WS2812_BOARDS`
 (default `pico`) — boards whose `remapper` target gets the LED; `WS2812_PIN`
 (default `16`); `WS2812_COLOR_ORDER` (default `0x123`: the RP2040-Zero clone
 used here has an RGB-ordered LED, confirmed on hardware).

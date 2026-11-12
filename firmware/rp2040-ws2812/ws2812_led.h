@@ -31,6 +31,7 @@
 #endif
 
 // hid-remapper expression register (1..32) whose value sets the LED as
+// (set from CMake: WS2812_COLOR_REGISTER, default 32)
 // 0xIIRRGGBB (II = intensity, 00 = WS2812_DEFAULT_INTENSITY), e.g.
 // `0x20FF0000 32 store`. The firmware has no colours of its own: the LED is
 // off until the config writes this register. 0 disables. Only used when
@@ -39,7 +40,8 @@
 #define WS2812_COLOR_REGISTER 32
 #endif
 
-// hid-remapper expression register (1..32) with LED settings, 0x00LOOOPP:
+// hid-remapper expression register (1..32) with LED settings, 0x00LOOOPP
+// (set from CMake: WS2812_SETTINGS_REGISTER, default 31):
 // PP = data GPIO (hex), OOO = colour order as in WS2812_COLOR_ORDER, L =
 // master brightness 1 (dimmest) .. F (full), 0 = full. e.g.
 // `0x00812310 31 store` = level 8, RGB, GPIO16. 0 (the power-on value) =

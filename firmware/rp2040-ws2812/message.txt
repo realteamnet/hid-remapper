@@ -1,7 +1,7 @@
-CLAUDE- ws2812: CLAUDE.md points to the next task spec
+CLAUDE- ws2812: register numbers as CMake settings (default 31/32)
 
-Add a NEXT TASK section: make the module board-agnostic and dormant unless
-register 31 is set (spec in .claude/next-task-any-board.md, outside the
-repo). Docs only.
+WS2812_SETTINGS_REGISTER (31) and WS2812_COLOR_REGISTER (32) are now CMake
+variables passed to the remapper target, so a project that needs those
+registers can move them (e.g. -DWS2812_COLOR_REGISTER=8). Defaults unchanged.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
