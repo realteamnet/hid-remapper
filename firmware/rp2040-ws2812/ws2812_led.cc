@@ -17,6 +17,13 @@ static bool initialized = false;
 static uint pin = WS2812_PIN;
 static uint16_t order = WS2812_COLOR_ORDER;
 
+// Master brightness levels for the settings register's L nibble. 0 = full;
+// 1..15 rise roughly x1.35 per step, so the low end stays usable.
+static const uint8_t master_levels[16] = {
+    255, 2, 4, 6, 9, 13, 18, 25, 34, 46, 62, 84, 113, 152, 205, 255,
+};
+static uint8_t master = 255;
+
 // Last value pushed to the LED (0xIIRRGGBB), so the FIFO is only written when
 // it changes. shown_valid is cleared when the pin or order changes.
 static uint32_t shown = 0;
@@ -87,12 +94,14 @@ void ws2812_led_put_rgb(uint8_t r, uint8_t g, uint8_t b) {
     put(r, g, b, WS2812_DEFAULT_INTENSITY);
 }
 
-// Show 0xIIRRGGBB. II = intensity (0x00 = use WS2812_DEFAULT_INTENSITY).
+// Show 0xIIRRGGBB. II = intensity (0x00 = use WS2812_DEFAULT_INTENSITY),
+// scaled by the master level (rounded up, so it never drops to 0).
 static void show(uint32_t iirrggbb) {
-    uint8_t intensity = iirrggbb >> 24;
+    uint16_t intensity = iirrggbb >> 24;
     if (intensity == 0) {
         intensity = WS2812_DEFAULT_INTENSITY;
     }
+    intensity = (intensity * master + 254) / 255;
     put((iirrggbb >> 16) & 0xFF, (iirrggbb >> 8) & 0xFF, iirrggbb & 0xFF, intensity);
     shown = iirrggbb;
     shown_valid = true;
@@ -111,11 +120,13 @@ static void move_to_pin(uint new_pin) {
     ws2812_program_init(pio, sm, offset, pin, WS2812_FREQ, 24);
 }
 
-// Settings register: 0x000OOOPP. PP = GPIO, OOO = colour order nibbles.
-// 0 = build defaults. Invalid fields are ignored (that part stays as it was).
+// Settings register: 0x00LOOOPP. PP = GPIO, OOO = colour order nibbles,
+// L = master brightness level (0 = full). 0 = build defaults. Invalid pin or
+// order fields are ignored (that part stays as it was).
 static void apply_settings(uint32_t settings) {
     uint new_pin = WS2812_PIN;
     uint16_t new_order = WS2812_COLOR_ORDER;
+    master = master_levels[(settings >> 20) & 0xF];
     if (settings != 0) {
         uint p = settings & 0xFF;
         uint16_t o = (settings >> 8) & 0xFFF;

@@ -37,7 +37,7 @@ C defines (`target_compile_definitions`):
 | `WS2812_COLOR_ORDER` | `0x213` | Default colour order: 3 nibbles, channel sent 1st/2nd/3rd (1 = R, 2 = G, 3 = B). `0x213` = GRB (standard), `0x123` = RGB. |
 | `WS2812_DEFAULT_INTENSITY` | `32` | Intensity 0..255 used when a colour's `II` byte is `00`. |
 | `WS2812_COLOR_REGISTER` | `32` | Expression register (1-32) whose value (`0xIIRRGGBB`) sets the LED; `0` disables. |
-| `WS2812_SETTINGS_REGISTER` | `31` | Expression register (1-32) with runtime LED settings (`0x000OOOPP`, see below); `0` disables. |
+| `WS2812_SETTINGS_REGISTER` | `31` | Expression register (1-32) with runtime LED settings (`0x00LOOOPP`, see below); `0` disables. |
 
 CMake variables (set before the include, or with `-D`): `WS2812_BOARDS`
 (default `pico`) — boards whose `remapper` target gets the LED; `WS2812_PIN`
@@ -61,20 +61,26 @@ No hid-remapper code is changed for this: the driver reads the existing global
 hid-remapper way: only a mapping with a "Layer N" target can activate a layer
 (one mapping per layer), and an expression can be that mapping's input.
 
-### LED settings from the config: GPIO and colour order (register 31)
+### LED settings from the config: GPIO, colour order, master brightness (register 31)
 
-Expression **register 31** sets the data pin and colour order at runtime, as
-`0x000OOOPP`:
+Expression **register 31** sets the data pin, colour order and master
+brightness at runtime, as `0x00LOOOPP`:
 
 - `PP` = data GPIO in hex (`0x10` = GPIO16).
 - `OOO` = colour order, three nibbles naming the channel sent first, second,
   third: 1 = R, 2 = G, 3 = B. `123` = RGB, `213` = GRB (standard WS2812),
   `231`, `312`, ... any permutation.
+- `L` = master brightness, `1` (dimmest) to `F` (full); `0` = full. It
+  multiplies every colour's `II`, so one value dims everything (layer colours,
+  keys, animations). Levels follow a steep curve (about x1.35 per step:
+  2, 4, 6, 9, 13, 18, 25, 34, 46, 62, 84, 113, 152, 205, 255 out of 255) so the
+  low end stays usable; the result is rounded up so a lit colour never goes
+  fully dark.
 - `0` (the power-on value) = build defaults (`WS2812_PIN`,
-  `WS2812_COLOR_ORDER`).
+  `WS2812_COLOR_ORDER`, full brightness).
 
-Examples: `0x00012310 31 store` = GPIO16, RGB. `0x00021305 31 store` = GPIO5,
-GRB. Put it at the start of any expression; writing it every tick is fine, the
+Examples: `0x00012310 31 store` = GPIO16, RGB, full. `0x00812310 31 store` =
+same at level 8. `0x00021305 31 store` = GPIO5, GRB, full. Put it at the start of any expression; writing it every tick is fine, the
 driver only acts when the value changes.
 
 - Changing the pin turns the LED on the old pin off, returns the old pin to a

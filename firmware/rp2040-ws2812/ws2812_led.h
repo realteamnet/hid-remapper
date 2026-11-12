@@ -39,10 +39,12 @@
 #define WS2812_COLOR_REGISTER 32
 #endif
 
-// hid-remapper expression register (1..32) with LED settings, 0x000OOOPP:
-// PP = data GPIO (hex), OOO = colour order as in WS2812_COLOR_ORDER. e.g.
-// `0x00012310 31 store` = GPIO16, RGB. 0 (the power-on value) = build
-// defaults. Invalid fields are ignored; the PIO-USB host pins are refused.
+// hid-remapper expression register (1..32) with LED settings, 0x00LOOOPP:
+// PP = data GPIO (hex), OOO = colour order as in WS2812_COLOR_ORDER, L =
+// master brightness 1 (dimmest) .. F (full), 0 = full. e.g.
+// `0x00812310 31 store` = level 8, RGB, GPIO16. 0 (the power-on value) =
+// build defaults. Invalid pin/order fields are ignored; the PIO-USB host pins
+// are refused.
 // Set to 0 to disable. Only used when WS2812_ENABLED.
 #ifndef WS2812_SETTINGS_REGISTER
 #define WS2812_SETTINGS_REGISTER 31
