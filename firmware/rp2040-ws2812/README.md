@@ -64,31 +64,24 @@ hid-remapper way: only a mapping with a "Layer N" target can activate a layer
 ### Example: Scroll Lock cycles layers 0-3, LED white / red / green / blue
 
 `example_scroll_lock_layers.json` (import it in the web config tool, then
-"Save to device"; it **replaces** the current config).
+"Save to device"; it **replaces** the current config). Layer switching uses
+only standard sticky layer mappings; one expression sets the colour.
 
-Mappings (all on layers 0-3):
+Mappings (all **Sticky**):
 
-| Input | Output | Why |
+| Input | Output | Layers |
 | --- | --- | --- |
-| Scroll Lock | Register 2 | Picks the key in the UI; register 2 = 1 while held. Also stops the key reaching the computer. |
-| Expression 2 | Layer 1 | |
-| Expression 3 | Layer 2 | |
-| Expression 4 | Layer 3 | Layer 0 is active when no other layer is. |
+| Scroll Lock | Layer 1 | 0 |
+| Scroll Lock | Layer 2 | 1 |
+| Scroll Lock | Layer 3 | 2 |
 
-Expressions (as typed in the config tool):
+Each press latches the next layer and releases the current one; on layer 3 no
+mapping is active, the release rule clears layer 3 and layer 0 is back. To use
+another key, change the input of the three mappings.
+
+Expression 1 (as typed in the config tool):
 
 ```
-Expression 1 (next layer on each press, kept in register 1; register 3 = previous key state):
-2 recall 3 recall not mul
-1 recall add 4 mod
-dup 1 store
-2 recall 3 store
-
-Expression 2:  1 recall 1 eq
-Expression 3:  1 recall 2 eq
-Expression 4:  1 recall 3 eq
-
-Expression 5 (LED colour by active layer, 0xBBRRGGBB -> register 32):
 layer_state 0x02 eq 0x20FF0000     IF layer 1: red
 layer_state 0x04 eq 0x2000FF00     IF layer 2: green
 layer_state 0x08 eq 0x200000FF     IF layer 3: blue
@@ -97,11 +90,8 @@ ifte ifte ifte
 32 store
 ```
 
-(The IF/ELSE notes are explanation only; `/* comments */` are allowed in the
-tool.) `layer_state` is the active-layer bit mask (layer 0 = 0x01, 1 = 0x02,
-2 = 0x04, 3 = 0x08), so expression 5 follows the real active layer however it
-was selected. Decimal numbers are scaled ×1000 internally; hex values are used
-as-is. To change the key, change the input of the first mapping.
+(The IF/ELSE notes are explanation only.) `layer_state` is the active-layer bit
+mask (layer 0 = 0x01, 1 = 0x02, 2 = 0x04, 3 = 0x08). Colours are `0xBBRRGGBB`.
 
 ## Changes required to integrate into hid-remapper
 

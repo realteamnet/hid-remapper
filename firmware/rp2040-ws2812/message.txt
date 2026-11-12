@@ -1,9 +1,7 @@
-CLAUDE- ws2812: no built-in colours; LED shows only the config's register 32
+CLAUDE- ws2812 example: Scroll Lock cycles layers with sticky mappings
 
-Remove the power-on sweep and the green activity flash (and
-ws2812_led_activity_on() plus its two main.cc call sites). The LED is off
-at init and shows register 32 (0xBBRRGGBB) as set by the config's
-expressions, e.g. per-layer colours via layer_state. Nothing about colours
-or layers is hardcoded in the firmware.
+example_scroll_lock_layers.json: three sticky layer mappings (Scroll Lock
+-> Layer 1/2/3 on layers 0/1/2) cycle layers 0-3; one expression sets the
+LED colour per active layer via layer_state into register 32. Config only.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
