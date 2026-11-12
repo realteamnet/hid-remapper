@@ -1,8 +1,7 @@
-CLAUDE- ws2812: master brightness nibble in settings register 31
+CLAUDE- ws2812: CLAUDE.md points to the next task spec
 
-Register 31 is now 0x00LOOOPP: L = master brightness 1 (dimmest) .. F
-(full), 0 = full (existing values unchanged). Levels from a ~x1.35/step
-table, multiplied with each colour's II and rounded up so a lit colour
-never goes dark. Docs updated.
+Add a NEXT TASK section: make the module board-agnostic and dormant unless
+register 31 is set (spec in .claude/next-task-any-board.md, outside the
+repo). Docs only.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>

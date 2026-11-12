@@ -22,7 +22,8 @@ expressions; see `example_scroll_lock_layers.json` and `README.md`.
 Docs outside the repo, in `D:\Devkit\hid-remapper-led\.claude\`:
 `ws2812-implementation.md` (how it works / how to integrate),
 `ws2812-changelog.md` (every change and why — keep it updated),
-`roadmap.md` (planned features), `bug-nlayers.md` (fork bug fix).
+`roadmap.md` (planned features), `bug-nlayers.md` (fork bug fix),
+`next-task-any-board.md` (next task spec).
 
 ## Rules
 
@@ -103,6 +104,14 @@ Docs outside the repo, in `D:\Devkit\hid-remapper-led\.claude\`:
   ~35 min; `sin` takes degrees; `round` → whole units.
 - Only a mapping with a "Layer N" target can activate a layer (non-zero input).
 - A mapping can output to a register ("Register N" target: 1000 while pressed).
+
+## NEXT TASK (not implemented yet)
+
+Make the module board-agnostic and **dormant unless register 31 is set** (no
+PIO/GPIO touched at all when it is 0; pin becomes mandatory in the config,
+default order GRB). Full spec and plan:
+`D:\Devkit\hid-remapper-led\.claude
+ext-task-any-board.md`.
 
 ## Status
 
