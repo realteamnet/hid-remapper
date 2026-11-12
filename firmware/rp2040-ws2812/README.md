@@ -65,7 +65,7 @@ hid-remapper way: only a mapping with a "Layer N" target can activate a layer
 
 `example_scroll_lock_layers.json` (import it in the web config tool, then
 "Save to device"; it **replaces** the current config). Layer switching uses
-only standard sticky layer mappings; two expressions set the colour.
+only standard sticky layer mappings; three expressions set the colour.
 
 Mappings (all **Sticky**):
 
@@ -105,6 +105,18 @@ Expression 2: keys Q W E R T Y U set red orange yellow green blue indigo violet
 32 recall                                    otherwise keep the current colour
 ifte ifte ifte ifte ifte ifte ifte
 32 store
+
+Expression 3: keys A S D F G H J, same colours at full intensity (0xFF)
+0x00070004 input_state_binary 0xFFFF0000     A: red
+0x00070016 input_state_binary 0xFFFF7F00     S: orange
+0x00070007 input_state_binary 0xFFFFFF00     D: yellow
+0x00070009 input_state_binary 0xFF00FF00     F: green
+0x0007000a input_state_binary 0xFF0000FF     G: blue
+0x0007000b input_state_binary 0xFF4B0082     H: indigo
+0x0007000d input_state_binary 0xFF8B00FF     J: violet
+32 recall
+ifte ifte ifte ifte ifte ifte ifte
+32 store
 ```
 
 (The notes are explanation only.) The last event wins: a colour key sets the
@@ -112,8 +124,8 @@ LED until the next colour key or layer change; changing layer sets the layer
 colour. The colour keys work on every layer and still type normally (map them
 to Nothing if you don't want that). `layer_state` is the active-layer bit mask
 (layer 0 = 0x01, 1 = 0x02, 2 = 0x04, 3 = 0x08). Colours are `0xIIRRGGBB`.
-Expression 2 uses 15 of the 16 stack slots, so it can't take more keys; split
-extra keys into another expression.
+Expressions 2 and 3 each use 15 of the 16 stack slots, so each holds at most 7
+keys; put more keys in another expression.
 
 ## Changes required to integrate into hid-remapper
 

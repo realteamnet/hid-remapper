@@ -1,7 +1,8 @@
-CLAUDE- ws2812: name colour format 0xIIRRGGBB (II = intensity)
+CLAUDE- ws2812 example: A-J keys set ROYGBIV at full intensity
 
-"BB" for brightness was ambiguous with the blue channel. Rename to
-0xIIRRGGBB and WS2812_BRIGHTNESS -> WS2812_DEFAULT_INTENSITY in code,
-docs and the example config comments. No behaviour change.
+Add expression 3 to example_scroll_lock_layers.json: A S D F G H J set
+red orange yellow green blue indigo violet with intensity 0xFF (any
+layer). Separate expression because expression 2 uses 15/16 stack slots.
+Config and docs only.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>

@@ -98,7 +98,7 @@
     "expressions": [
         "/* On layer change: LED = layer colour (0xIIRRGGBB) -> register 32; register 30 = last layer_state */ eol layer_state 30000 recall eq eol 32000 recall eol layer_state 0x02 eq 0x20FF0000 eol layer_state 0x04 eq 0x2000FF00 eol layer_state 0x08 eq 0x200000FF eol 0x20FFFFFF eol ifte ifte ifte eol ifte eol 32000 store eol layer_state 30000 store",
         "/* Keys Q W E R T Y U set the LED to red orange yellow green blue indigo violet (any layer) */ eol 0x00070014 input_state_binary 0x20FF0000 eol 0x0007001a input_state_binary 0x20FF7F00 eol 0x00070008 input_state_binary 0x20FFFF00 eol 0x00070015 input_state_binary 0x2000FF00 eol 0x00070017 input_state_binary 0x200000FF eol 0x0007001c input_state_binary 0x204B0082 eol 0x00070018 input_state_binary 0x208B00FF eol 32000 recall eol ifte ifte ifte ifte ifte ifte ifte eol 32000 store",
-        "",
+        "/* Keys A S D F G H J set the LED to red orange yellow green blue indigo violet at full intensity (any layer) */ eol 0x00070004 input_state_binary 0xFFFF0000 eol 0x00070016 input_state_binary 0xFFFF7F00 eol 0x00070007 input_state_binary 0xFFFFFF00 eol 0x00070009 input_state_binary 0xFF00FF00 eol 0x0007000a input_state_binary 0xFF0000FF eol 0x0007000b input_state_binary 0xFF4B0082 eol 0x0007000d input_state_binary 0xFF8B00FF eol 32000 recall eol ifte ifte ifte ifte ifte ifte ifte eol 32000 store",
         "",
         "",
         "",
