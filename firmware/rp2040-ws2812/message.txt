@@ -1,8 +1,8 @@
-CLAUDE- ws2812 example: A-J keys set ROYGBIV at full intensity
+CLAUDE- ws2812 example: Z toggles a test animation (expressions only)
 
-Add expression 3 to example_scroll_lock_layers.json: A S D F G H J set
-red orange yellow green blue indigo violet with intensity 0xFF (any
-layer). Separate expression because expression 2 uses 15/16 stack slots.
-Config and docs only.
+Expressions 4-6 in example_scroll_lock_layers.json: Z toggles a 10 s
+looping animation (red strobe, green blink, police red/blue, blue
+breathing, rainbow) built from time_sec/sin/round; the previous LED colour
+is restored when it stops. Config and docs only, no firmware change.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>

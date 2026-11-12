@@ -119,6 +119,31 @@ ifte ifte ifte ifte ifte ifte ifte
 32 store
 ```
 
+Expressions 4-6: **Z** toggles a test animation (any layer), all in config:
+
+```
+Expression 4: Z toggles register 29 (animation on/off); saves the LED colour in
+register 28 when it starts and restores it when it stops.
+
+Expression 5: precomputes two effects
+  rainbow   R,G,B = round((sin(phase + 0/120/240 deg) + 1) * 127.5), 1 cycle/s,
+            intensity 0x60                                        -> register 27
+  breathing blue, intensity round((sin + 1) * 127 + 1), 2 s/breath -> register 26
+
+Expression 6: while register 29 is on, every 10 s:
+  0-2 s  red strobe 10 Hz          (time_sec 0.1 mod 0.05 lt ...)
+  2-4 s  green blink 2 Hz, full intensity
+  4-6 s  police red/blue 4 Hz
+  6-8 s  blue breathing            (register 26)
+  8-10 s rainbow                   (register 27)
+  -> register 32; when off it writes register 32 back unchanged.
+```
+
+Timing uses `time_sec` (milliseconds on the ×1000 scale, wraps after ~24
+days); `sin` takes degrees; `round` gives whole numbers, so
+`round(x) 0x10000 mul` places a 0-255 value in the red byte (and
+`0x1000000 mul` in the intensity byte). Z still types normally.
+
 (The notes are explanation only.) The last event wins: a colour key sets the
 LED until the next colour key or layer change; changing layer sets the layer
 colour. The colour keys work on every layer and still type normally (map them
