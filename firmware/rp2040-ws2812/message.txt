@@ -1,10 +1,8 @@
-CLAUDE- faster CI: ccache, parallel make, only remapper + ws2812_test
+CLAUDE- ws2812_test: build as copy_to_ram
 
-build-rp2040.yml: cache ccache objects between runs (actions/cache),
-build with make -j$(nproc), build only the remapper and ws2812_test
-targets (skip dual/serial variants), comment out the PiZero build (not
-the target hardware). rm -f for flash_b_side.uf2 which is no longer built.
-Also fix a mis-encoded dash in CLAUDE.md and document WS2812_RGB_ORDER
-in README.md.
+The PoC remapper.uf2 (copy_to_ram) drives the LED correctly on the
+RP2040-Zero clone, but ws2812_test.uf2 (XIP from flash) shows nothing.
+Make ws2812_test copy_to_ram as well, changing only that, to test
+whether XIP from the clone's flash chip is the cause.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>

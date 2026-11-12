@@ -30,6 +30,9 @@ if(PICO_PLATFORM STREQUAL "rp2040")
     target_include_directories(ws2812_test PRIVATE ${WS2812_DIR})
     target_compile_definitions(ws2812_test PRIVATE WS2812_PIN=${WS2812_PIN} WS2812_RGB_ORDER=${WS2812_RGB_ORDER})
     target_link_libraries(ws2812_test pico_stdlib hardware_pio)
+    # Run from RAM like `remapper`: XIP from flash with the Pico's boot2/flash
+    # settings did not run on the RP2040-Zero clone.
+    pico_set_binary_type(ws2812_test copy_to_ram)
     pico_add_extra_outputs(ws2812_test)
 endif()
 
