@@ -171,7 +171,7 @@ it stays:
 ### What the keys do
 
 All keys still reach the computer, except Scroll Lock, Power (Fn+Esc on a
-Logitech K400, see "Fn lock" below) and F1-F8 while Ctrl+Alt is held.
+Logitech K400r, see "Fn lock" below) and F1-F8 while Ctrl+Alt is held.
 
 Hold **Ctrl and Alt** (either side) and press F1-F8 to pick the mode:
 
@@ -220,14 +220,16 @@ indexes 1-9 and buttons 10-13 use 11-14.
   brightness; both sticks are added together (left = X/Y, right = Z/Rz, as
   hid-remapper normalises gamepads).
 
-### Fn lock (Logitech K400)
+### Fn lock (Logitech K400r)
 
 Expression 6 uses the `hidout` module (`firmware/hidout/`) to switch the
-K400's Fn lock: at power-on F1-F12 come first, and **Fn+Esc** (which the K400
-reports as Power, `0x00070066`) toggles to media keys first and back. A
-mapping Power → Nothing keeps that key from reaching the computer. Without a
-K400 on a Unifying receiver, or on firmware without `hidout`, it does
-nothing. See `firmware/hidout/README.md` for the bytes and caveats.
+K400r's Fn lock: at power-on F1-F12 come first, and **Fn+Esc** (which the
+K400r reports as Power, `0x00070066`) toggles to media keys first and back.
+The setting is sent again every 5 s, because the keyboard forgets it when it
+is switched off. A mapping Power → Nothing keeps that key from reaching the
+computer. Without a K400r on a Unifying receiver, or on firmware without
+`hidout`, it does nothing. Other K400 models use a different feature index;
+see `firmware/hidout/README.md`.
 
 ### How it is built
 

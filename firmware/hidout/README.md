@@ -22,14 +22,14 @@ Lets a hid-remapper **expression send a HID output report to a connected device*
 - **Report types.** Only output reports (HID SET_REPORT, type Output); feature reports are not sent.
 - **Not supported:** reading replies. If a command needs a value the device reports first, this module can't do it.
 
-## Example: Logitech K400 Fn lock on Fn+Esc
+## Example: Logitech K400r Fn lock on Fn+Esc
 
-The K400's Fn lock (F1-F12 or media keys first) is normally switched by Logitech software. That software sends a HID++ short report to the Unifying receiver (`046D:C52B`):
+The K400r's Fn lock (F1-F12 or media keys first) is normally switched by Logitech software. It is a HID++ 2.0 command to the keyboard through its Unifying receiver (`046D:C52B`), feature FN_INVERSION (`0x40A0`):
 
-- F-keys first: `10 01 09 19 00 00 00`
-- media keys first: `10 01 09 18 01 00 00`
+- F-keys first: `10 01 0F 1A 00 00 00`
+- media keys first: `10 01 0F 1A 01 00 00`
 
-(report ID `10`, keyboard in receiver slot `01`, feature index `09` = FN_INVERSION, function 1, then the value). On the K400, Fn+Esc reaches the host as **Power** (`0x00070066`), so it can be the trigger.
+(report ID `10`, keyboard in receiver slot `01`, feature index `0F`, function 1 with software ID `A`, then the value). These were found and confirmed on a K400r (wireless PID `4024`) on 2026-11-13. On the K400r, Fn+Esc reaches the host as **Power** (`0x00070066`), so it is the trigger.
 
 ```
 /* register 6 = 1 F-keys first, 2 media keys first; 1 at power-on */
@@ -37,19 +37,19 @@ The K400's Fn lock (F1-F12 or media keys first) is normally switched by Logitech
 /* Fn+Esc (Power) toggles it */
 0x00070066 input_state_binary 0x00070066 prev_input_state_binary not mul
 0x3 6 recall sub 6 recall ifte 6 store
-/* the report and its target */
-6 recall 0x1 eq 0x10010919 0x10010918 ifte 1 store
+/* the report; register 1 is 0 for one tick every 5 s so it is sent again */
+0x10010F1A time_sec 5 mod 0.001 lt not mul 1 store
 6 recall 0x1 eq 0x00000000 0x01000000 ifte 2 store
+/* the target */
 0x046DC52B 3 store
 ```
 
-- Also map **Power (`0x00070066`) → Nothing** on every layer, or the computer gets a Power key press (sleep or shutdown) with every Fn+Esc.
+- **Map Power (`0x00070066`) → Nothing** on every layer, or the computer gets a Power key press (sleep or shutdown) with every Fn+Esc.
+- **Resend every 5 s:** the keyboard forgets the setting when it is switched off. Writing 0 to register 1 for one tick makes `hidout` send the report again, so the setting comes back within 5 s after the keyboard wakes. While the keyboard is off, the receiver just answers with an error. Change `5` to resend less often.
 - Use hex (`0x1`) for raw values; plain decimals are stored ×1000.
 - `hidout_example.json` in this folder is a config with only this (one expression and the mapping). `firmware/ws2812/ws2812_example.json` also contains it (expression 6 and the mapping). Both are listed under Examples in the config drive's web tool.
-- **Caveats:**
-  - The bytes come from github.com/h8man/k400p-fn-lock-win (K400 Plus). Feature index `09` is not confirmed on the original K400; if nothing changes, the index differs on that model.
-  - If the keyboard is in another receiver slot, change `01`.
-  - The setting is sent again when the receiver is re-plugged, but not when only the keyboard is switched off and on.
+- **Other models:** the feature index differs per model (the K400 Plus has it at `09`). If the keyboard is in another receiver slot, change `01`. The index and slot can be read from the keyboard with a HID++ root lookup (`10 <slot> 00 0A 40 A0 00` → reply byte 4).
+- **Two receivers of the same type** (e.g. a second Unifying receiver with mice) both match `0x046DC52B`. The command then also goes to the other receiver's slot 1, which would run function 1 of whatever feature that device has at index `0F`. Only plug the keyboard's receiver into the remapper, or make sure slot 1 of the other receiver is not affected.
 
 ## Build
 

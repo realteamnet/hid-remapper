@@ -77,7 +77,7 @@
         []
     ],
     "expressions": [
-        "/* Fn lock (Logitech K400, needs the hidout module): register 6 = 1 F-keys first, 2 media keys first */ eol 6000 recall 0 eq 0x1 6000 recall ifte 6000 store eol /* Fn+Esc (reported as Power) toggles it */ eol 0x00070066 input_state_binary 0x00070066 prev_input_state_binary not mul eol 0x3 6000 recall sub 6000 recall ifte 6000 store eol /* HID++ report 10 01 09 19|18 00|01 00 00 to the Unifying receiver 046D:C52B */ eol 6000 recall 0x1 eq 0x10010919 0x10010918 ifte 1000 store eol 6000 recall 0x1 eq 0x00000000 0x01000000 ifte 2000 store eol 0x046DC52B 3000 store",
+        "/* Fn lock (Logitech K400r, needs the hidout module): register 6 = 1 F-keys first, 2 media keys first */ eol 6000 recall 0 eq 0x1 6000 recall ifte 6000 store eol /* Fn+Esc (reported as Power) toggles it */ eol 0x00070066 input_state_binary 0x00070066 prev_input_state_binary not mul eol 0x3 6000 recall sub 6000 recall ifte 6000 store eol /* HID++ report 10 01 0F 1A 00|01 00 00 (slot 1, FN_INVERSION at index 0F) to the Unifying receiver 046D:C52B */ eol /* register 1 is 0 for one tick every 5 s, so hidout sends again: the keyboard forgets the setting when it is switched off */ eol 0x10010F1A time_sec 5000 mod 1 lt not mul 1000 store eol 6000 recall 0x1 eq 0x00000000 0x01000000 ifte 2000 store eol 0x046DC52B 3000 store",
         "",
         "",
         "",

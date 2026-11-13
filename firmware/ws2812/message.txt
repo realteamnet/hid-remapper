@@ -1,8 +1,10 @@
-CLAUDE- vdisk: drop jsmin, the web tool is only gzipped
+CLAUDE- K400r Fn lock: feature index 0F, resend every 5 s
 
-After gzip, minifying saved about 10 KB of WEBTOOL.HTM, so jsmin.c and
-its host build are removed. The web tool build now needs only CMake.
-WEBTOOL.HTM is about 166 KB.
+The K400 Plus bytes (index 09) did nothing on the K400r. Its
+FN_INVERSION feature is at index 0F (found and confirmed on the
+keyboard): 10 01 0F 1A 00|01 00 00. The examples now send that, and
+write 0 to register 1 for one tick every 5 s so hidout resends it,
+because the keyboard forgets the setting when switched off.
 
-Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd
