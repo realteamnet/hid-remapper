@@ -28,10 +28,19 @@
 #define DATA_LBA (ROOT_LBA + ROOT_ENTRIES / 16)
 #define FAT_DATE 0x5C21  // 2026-01-01
 
+#ifdef VDISK_WEB_TOOL
+extern const uint8_t vdisk_tool_start[];
+extern const uint8_t vdisk_tool_end[];
+#define TOOL_SIZE ((uint32_t) (vdisk_tool_end - vdisk_tool_start))
+#else
+#define TOOL_SIZE 0u
+#endif
+
 #define APPLY_CLUSTER 2
 #define README_CLUSTER 3
 #define STATUS_CLUSTER 4
-#define JSON_CLUSTER 5
+#define TOOL_CLUSTER 5
+#define JSON_CLUSTER (TOOL_CLUSTER + (TOOL_SIZE + CLUSTER - 1) / CLUSTER)
 
 #define VOLUME_LABEL "HIDREMAPPER"
 #define JSON_NAME "config.json"
@@ -54,8 +63,13 @@ static const char readme[] =
     "\r\n"
     JSON_NAME "  The current configuration. Copy it off the drive to back it up.\r\n"
     "APPLY        Copy a configuration .json file into this folder to load it\r\n"
-    "             and save it on the device.\r\n"
+    "             and save it on the device. Copy a firmware .uf2 file into it\r\n"
+    "             to restart in firmware flashing mode; then copy the .uf2\r\n"
+    "             file to the RPI-RP2 drive that appears.\r\n"
     "STATUS.TXT   Result of the last file copied into APPLY.\r\n"
+#ifdef VDISK_WEB_TOOL
+    "WEBTOOL.HTM  The configuration tool. Open it in Chrome or Edge.\r\n"
+#endif
     "\r\n"
     "The drive is rebuilt from the device every time, so nothing else that is\r\n"
     "written to it is kept.\r\n";
@@ -171,6 +185,8 @@ static uint8_t dropped_next = 0;
 static char status[80] = "No file has been copied into APPLY yet.\r\n";
 static uint32_t json_size = 0;
 static bool apply_pending = false;
+static uint16_t uf2_cluster = 0;
+static bool bootloader_pending = false;
 static bool changed = false;
 static bool host_ejected = false;
 static uint64_t last_write = 0;
@@ -334,14 +350,17 @@ static void lfn_entry(uint8_t* e, const char* name, const char* short_name) {
 }
 
 static uint16_t fat_entry(uint32_t cluster) {
-    uint32_t last = JSON_CLUSTER + json_clusters() - 1;
     if (cluster == 0) {
         return 0xFF8;
     }
-    if ((cluster < JSON_CLUSTER) || (cluster == last)) {
+    if (cluster < TOOL_CLUSTER) {
         return 0xFFF;
     }
-    return (cluster < last) ? cluster + 1 : 0;
+    uint32_t end = (cluster < JSON_CLUSTER) ? JSON_CLUSTER : JSON_CLUSTER + json_clusters();
+    if (cluster >= end) {
+        return 0;
+    }
+    return (cluster == end - 1) ? 0xFFF : cluster + 1;
 }
 
 static void fat_sector(uint32_t sector, uint8_t* buf) {
@@ -398,6 +417,9 @@ static void read_sector(uint32_t lba, uint8_t* buf) {
         lfn_entry(buf + 128, JSON_NAME, JSON_SHORT_NAME);
         json_clusters();
         dir_entry(buf + 160, JSON_SHORT_NAME, 0x20, JSON_CLUSTER, json_size);
+        if (TOOL_SIZE > 0) {
+            dir_entry(buf + 192, "WEBTOOL HTM", 0x20, TOOL_CLUSTER, TOOL_SIZE);
+        }
     } else if (lba >= DATA_LBA) {
         uint32_t cluster = 2 + (lba - DATA_LBA) / SECTORS_PER_CLUSTER;
         uint32_t offset = (lba - DATA_LBA) % SECTORS_PER_CLUSTER * SECTOR;
@@ -410,6 +432,13 @@ static void read_sector(uint32_t lba, uint8_t* buf) {
             text_sector(readme, offset, buf);
         } else if (cluster == STATUS_CLUSTER) {
             text_sector(status, offset, buf);
+#ifdef VDISK_WEB_TOOL
+        } else if (cluster < JSON_CLUSTER) {
+            uint32_t pos = (cluster - TOOL_CLUSTER) * CLUSTER + offset;
+            if (pos < TOOL_SIZE) {
+                memcpy(buf, vdisk_tool_start + pos, (TOOL_SIZE - pos < SECTOR) ? TOOL_SIZE - pos : SECTOR);
+            }
+#endif
         } else if (cluster < JSON_CLUSTER + json_clusters()) {
             generate_json(buf, (cluster - JSON_CLUSTER) * CLUSTER + offset);
         }
@@ -807,6 +836,11 @@ static void set_status(const char* prefix, const char* text) {
 }
 
 static void check_dropped() {
+    for (auto const& d : dropped) {
+        if ((uf2_cluster != 0) && (d.cluster == uf2_cluster)) {
+            bootloader_pending = true;
+        }
+    }
     if ((im.state == IDLE) || apply_pending) {
         return;
     }
@@ -847,6 +881,11 @@ static void write_sector(uint32_t lba, const uint8_t* buf) {
             dropped_next = (dropped_next + 1) % (sizeof(dropped) / sizeof(dropped[0]));
         }
     } else {
+        uint32_t magic[2];
+        memcpy(magic, buf, 8);
+        if (cluster_start && (magic[0] == 0x0A324655) && (magic[1] == 0x9E5D5157)) {
+            uf2_cluster = cluster;
+        }
         bool next = (im.state == PARSING) && (lba == im.next_lba);
         if (!next && cluster_start && !apply_pending && looks_like_json(buf)) {
             im = import_t();
@@ -923,6 +962,10 @@ void vdisk_task() {
     if (now - last_write <= QUIET_US) {
         return;
     }
+    if (bootloader_pending) {
+        bootloader_pending = false;
+        reset_to_bootloader();
+    }
     if (!changed && (dropped[0].cluster != 0)) {
         set_status("ERROR: ", (im.state == FAILED) ? im.error : "file is not a configuration");
     }
@@ -932,6 +975,7 @@ void vdisk_task() {
         json_size = 0;
         im = import_t();
         memset(dropped, 0, sizeof(dropped));
+        uf2_cluster = 0;
         eject_until = now + EJECT_US;
     }
 }
