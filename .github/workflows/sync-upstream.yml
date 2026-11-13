@@ -1,0 +1,44 @@
+name: sync-upstream
+# Merges jfedor2/hid-remapper master into this fork's master once a day, then
+# builds. A merge conflict fails the run and nothing is pushed.
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+defaults:
+  run:
+    shell: bash --noprofile --norc -x -e -o pipefail {0}
+permissions:
+  contents: write
+concurrency: sync-upstream
+jobs:
+  sync:
+    runs-on: ubuntu-22.04
+    outputs:
+      merged: ${{ steps.merge.outputs.merged }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: master
+          fetch-depth: 0
+      - id: merge
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/jfedor2/hid-remapper.git
+          git fetch --no-tags upstream master
+          if git merge-base --is-ancestor upstream/master HEAD; then
+            echo "merged=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git merge --no-edit -m "Merge upstream jfedor2/hid-remapper master" upstream/master
+          git push origin HEAD:master
+          echo "merged=true" >> "$GITHUB_OUTPUT"
+  build:
+    needs: sync
+    if: needs.sync.outputs.merged == 'true'
+    uses: ./.github/workflows/build-rp2040.yml
+    with:
+      ref: master
+    permissions:
+      contents: write

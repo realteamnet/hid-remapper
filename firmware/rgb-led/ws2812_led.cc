@@ -9,6 +9,10 @@
 #define WS2812_FREQ 800000
 #define WS2812_LATCH_US 350
 
+#define BOARD_PIN 0xFF
+#define POWER_PIN_FLAG 0x80
+#define NO_PIN 0xFF
+
 extern int32_t registers[];  // remapper.cc
 
 static_assert((WS2812_SETTINGS_REGISTER >= 1) && (WS2812_SETTINGS_REGISTER <= 32) &&
@@ -22,12 +26,22 @@ static PIO pio;
 static uint sm;
 static uint offset;
 static uint pin;
+static uint power_pin = NO_PIN;
 static gpio_function_t prev_function;
+static gpio_function_t prev_power_function;
 static uint8_t order[3];
 static uint8_t brightness;
 
 static uint32_t prev_settings = 0;
 static uint32_t prev_color = 0;
+
+static bool pin_ok(uint p) {
+    return (p < NUM_BANK0_GPIOS) &&
+#ifdef PICO_DEFAULT_PIO_USB_VBUSEN_PIN
+           (p != PICO_DEFAULT_PIO_USB_VBUSEN_PIN) &&
+#endif
+           (p != PICO_DEFAULT_PIO_USB_DP_PIN) && (p != PICO_DEFAULT_PIO_USB_DP_PIN + 1);
+}
 
 static void show(uint32_t color) {
     uint32_t intensity = color >> 24;
@@ -55,11 +69,33 @@ static void stop() {
     pio_sm_set_enabled(pio, sm, false);
     pio_remove_program_and_unclaim_sm(&ws2812_program, pio, sm, offset);
     gpio_set_function(pin, prev_function);
+    if (power_pin != NO_PIN) {
+        gpio_set_dir(power_pin, GPIO_IN);
+        gpio_set_function(power_pin, prev_power_function);
+        power_pin = NO_PIN;
+    }
     active = false;
 }
 
 static void configure(uint32_t settings) {
     uint new_pin = settings & 0xFF;
+    uint new_power_pin = NO_PIN;
+    if (settings >> 24) {
+        new_power_pin = (settings >> 24) & ~POWER_PIN_FLAG;
+    }
+    bool board_ok = true;
+    if (new_pin == BOARD_PIN) {
+#ifdef PICO_DEFAULT_WS2812_PIN
+        new_pin = PICO_DEFAULT_WS2812_PIN;
+#ifdef PICO_DEFAULT_WS2812_POWER_PIN
+        if (new_power_pin == NO_PIN) {
+            new_power_pin = PICO_DEFAULT_WS2812_POWER_PIN;
+        }
+#endif
+#else
+        board_ok = false;
+#endif
+    }
     uint8_t a = (settings >> 16) & 0x0F;
     uint8_t b = (settings >> 12) & 0x0F;
     uint8_t c = (settings >> 8) & 0x0F;
@@ -68,12 +104,12 @@ static void configure(uint32_t settings) {
         b = 1;
         c = 3;
     }
-    bool valid = (settings != 0) && ((settings >> 24) == 0) &&
-                 (new_pin < NUM_BANK0_GPIOS) &&
-                 (new_pin != PICO_DEFAULT_PIO_USB_DP_PIN) && (new_pin != PICO_DEFAULT_PIO_USB_DP_PIN + 1) &&
+    bool valid = (settings != 0) && board_ok && pin_ok(new_pin) &&
+                 (((settings >> 24) == 0) || ((settings >> 24) & POWER_PIN_FLAG)) &&
+                 ((new_power_pin == NO_PIN) || (pin_ok(new_power_pin) && (new_power_pin != new_pin))) &&
                  a && b && c && ((a | b | c) == 3) && ((a ^ b ^ c) == 0);
 
-    if (active && (!valid || (new_pin != pin))) {
+    if (active && (!valid || (new_pin != pin) || (new_power_pin != power_pin))) {
         stop();
     }
     prev_settings = settings;
@@ -83,6 +119,13 @@ static void configure(uint32_t settings) {
     if (!active) {
         if (!pio_claim_free_sm_and_add_program_for_gpio_range(&ws2812_program, &pio, &sm, &offset, new_pin, 1, true)) {
             return;
+        }
+        if (new_power_pin != NO_PIN) {
+            power_pin = new_power_pin;
+            prev_power_function = gpio_get_function(power_pin);
+            gpio_init(power_pin);
+            gpio_put(power_pin, true);
+            gpio_set_dir(power_pin, GPIO_OUT);
         }
         pin = new_pin;
         prev_function = gpio_get_function(pin);

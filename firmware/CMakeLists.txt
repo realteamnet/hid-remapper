@@ -74,8 +74,8 @@ target_link_libraries(remapper
     usb_midi_host
 )
 
-include(rp2040-ws2812/ws2812.cmake OPTIONAL)
-include(rp2040-vdisk/vdisk.cmake OPTIONAL)
+include(rgb-led/ws2812.cmake OPTIONAL)
+include(vdisk/vdisk.cmake OPTIONAL)
 
 pico_set_binary_type(remapper copy_to_ram)
 if(PICO_PLATFORM STREQUAL "rp2040")

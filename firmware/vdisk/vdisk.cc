@@ -83,6 +83,9 @@ static const char* const op_names[] = {
     "prev_input_state_scaled", "deadzone", "deadzone2"
 };
 #define NOPS (sizeof(op_names) / sizeof(op_names[0]))
+#ifdef VDISK_OP_COUNT
+static_assert(NOPS == VDISK_OP_COUNT, "op_names[] does not match the Op enum in types.h");
+#endif
 
 enum {
     SEC_NONE,

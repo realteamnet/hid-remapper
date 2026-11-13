@@ -1,4 +1,4 @@
-# rp2040-vdisk: configuration drive
+# vdisk: configuration drive
 
 Adds a small USB flash drive to HID Remapper (the `remapper` target, RP2040 and RP2350). The drive is not stored anywhere: every sector is generated when the host reads it.
 
@@ -37,13 +37,15 @@ Adds a small USB flash drive to HID Remapper (the `remapper` target, RP2040 and 
 | `VDISK_ENABLE` | `ON` | Build the drive into `remapper`. |
 | `VDISK_WEB_TOOL` | `ON` | Put the web config tool on the drive. Needs Python 3 at build time. |
 
-`VDISK_EP_OUT` / `VDISK_EP_IN` (`0x04` / `0x84`) in `vdisk.h` are the bulk endpoints. `VDISK_CONFIG_VERSION` in `vdisk.h` must match `CONFIG_VERSION` in `src/config.cc`, and the `op_names` table in `vdisk.cc` must follow the `Op` enum in `src/types.h`.
+`VDISK_EP_OUT` / `VDISK_EP_IN` (`0x04` / `0x84`) in `vdisk.h` are the bulk endpoints.
+
+The build stops with an error if `src/config.cc` has a different `CONFIG_VERSION` than `VDISK_CONFIG_VERSION` in `vdisk.h`, or if the `Op` enum in `src/types.h` has a different number of ops than `op_names` in `vdisk.cc`. Either means upstream changed the config format, and `vdisk.cc` must be updated before the drive can read or write it.
 
 ## Changes to hid-remapper's own files
 
 | File | Change |
 | --- | --- |
-| `firmware/CMakeLists.txt` | `include(rp2040-vdisk/vdisk.cmake OPTIONAL)` after the `remapper` target. |
+| `firmware/CMakeLists.txt` | `include(vdisk/vdisk.cmake OPTIONAL)` after the `remapper` target. |
 | `firmware/src/tusb_config_both/tusb_config.h` | `#ifndef` around `#define CFG_TUD_MSC 0`, so the build can set it to 1. |
 | `firmware/src/tinyusb_stuff.cc` | Inside `#ifdef VDISK_ENABLED`: the include, and `tud_descriptor_configuration_cb()` returns `vdisk_configuration_descriptor(...)`. |
 | `firmware/src/main.cc` | Inside `#ifdef VDISK_ENABLED`: the include, and `vdisk_task()` after `tud_task()`. |

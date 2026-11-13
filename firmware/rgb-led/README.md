@@ -1,16 +1,17 @@
-# rp2040-ws2812
+# rgb-led
 
-WS2812 (NeoPixel) RGB LED support for the
+RGB LED support for the
 [hid-remapper](https://github.com/jfedor2/hid-remapper) RP2040/RP2350 firmware,
-driven entirely by the hid-remapper config.
+driven entirely by the hid-remapper config. It drives single-wire addressable
+LEDs: WS2812, WS2812B, SK6812 (RGB) and Adafruit NeoPixels.
 
 - **Any board.** The module is built into the `remapper` target on every board.
-  Nothing in it is board specific.
+  The config can name any GPIO, or ask for the board's own LED.
 - **Dormant by default.** Until the config writes the settings register, no LED
   code runs: no PIO state machine is claimed and no pin is touched. A board
   without the LED configured behaves exactly like stock hid-remapper.
 - **Nothing hardcoded.** The firmware has no colours, animations or layer
-  logic. The config says which GPIO the LED is on and what colour to show, using
+  logic. The config says which LED to use and what colour to show, using
   two expression registers.
 
 Everything lives in this folder so it can later become a git submodule.
@@ -27,37 +28,62 @@ In any expression (web config tool, "Expressions" tab):
 Save to device and the LED turns red. Developed on a Waveshare RP2040-Zero
 clone (WS2812 on GPIO16, RGB order) running the `pico` build.
 
+On a board whose definition names its LED, `0x000000FF 31 store` uses that LED
+without knowing the pin (see "Boards" below).
+
+## Boards
+
+| hid-remapper build (`PICO_BOARD`) | LED | Settings to use |
+| --- | --- | --- |
+| `pico` on a Waveshare RP2040-Zero (or clone) | WS2812 on GPIO16 | `0x00000010` (GRB). Some clones are RGB: `0x00012310`. |
+| `pico2` on a Waveshare RP2350-Zero | WS2812 on GPIO16 | `0x00000010`; try `0x00012310` if red and green are swapped. |
+| `feather_host` (Adafruit Feather RP2040 with USB Type A Host) | NeoPixel on GPIO21 | `0x000000FF`. If it stays dark, the NeoPixel may need its power pin switched on: `0x940000FF` (GPIO20). |
+| `waveshare_rp2350_usb_a` (Waveshare RP2350-USB-A) | WS2812 on GPIO16 | `0x000000FF`; `0x000123FF` if red and green are swapped. |
+| Other builds (`remapper`, `remapper_v7`, `remapper_v8`, `flatbox_rev4/8`, `meisterconverter`, `rp2040abb`, `waveshare_rp2040_pizero`, `waveshare_rp2350_pizero`) | No addressable LED on the board | An external LED strip or module on any free GPIO works, e.g. `0x00000005` for GPIO5. |
+
+- `FF` takes the pin from `PICO_DEFAULT_WS2812_PIN` in the board definition
+  (`firmware/src/boards/*.h` or the Pico SDK's). Boards without it ignore `FF`.
+- None of these other boards has been tested. Only the RP2040-Zero clone has.
+  The colour order and the Feather's power pin are from the boards'
+  documentation, not tested.
+- Plain (non-addressable) RGB LEDs, driven by three PWM pins, and RGBW LEDs
+  (SK6812 RGBW, 4 bytes per pixel) are not supported.
+
 ## The two registers
 
-### Register 31: settings, `0x00LOOOPP`
+### Register 31: settings, `0xWWLOOOPP`
 
 | Field | Meaning |
 | --- | --- |
-| `PP` | Data GPIO in hex (`10` = GPIO16). Required. |
+| `PP` | Data GPIO in hex (`10` = GPIO16). `FF` = the board's own LED (see "Boards"). Required. |
 | `OOO` | Colour order: the channel sent first, second, third (1 = R, 2 = G, 3 = B). `213` = GRB (standard WS2812), `123` = RGB, or any other permutation. `000` = GRB. |
 | `L` | Master brightness, `1` (dimmest) to `F` (full); `0` = full. |
+| `WW` | LED power pin: `00` = none. `80` + the GPIO number = that GPIO is driven high while the LED is in use, for boards that switch the LED's power (`94` = GPIO20). With `PP` = `FF` and `WW` = `00`, the board's `PICO_DEFAULT_WS2812_POWER_PIN` is used if it has one. |
 
 - `0` (the power-on value) means **no LED**: nothing is claimed or touched.
 - An invalid value also means no LED: a pin that doesn't exist, one of the
-  PIO-USB host port pins, or an order that isn't a permutation of 1, 2, 3.
+  PIO-USB host port pins (or its VBUS-enable pin), `FF` on a board without an
+  LED of its own, a power pin equal to the data pin, `WW` without bit 7 set, or
+  an order that isn't a permutation of 1, 2, 3.
 - Examples: `0x00012310` = GPIO16, RGB, full brightness. `0x00812310` = the same
-  at level 8. `0x00000005` = GPIO5, GRB, full.
+  at level 8. `0x00000005` = GPIO5, GRB, full. `0x948000FF` = the board's LED,
+  GRB, level 8, power on GPIO20.
 - Writing it every tick is fine. The driver only acts when the value changes.
 - Registers keep their values until the device is power-cycled. Removing the
   line from the config does not release the LED until then; store `0` to
   release it straight away.
 - When the value becomes valid the driver claims a free PIO state machine and
-  the pin. When the pin changes it moves. When the value goes back to 0 it turns
-  the LED off, releases the state machine and program space, and restores the
-  pin to the function it had before.
+  the pin (and drives the power pin high). When a pin changes it moves. When
+  the value goes back to 0 it turns the LED off, releases the state machine and
+  program space, and restores both pins to the function they had before.
 - The master level multiplies every colour's intensity, so one value dims
   everything. The 15 steps rise about 1.35x each (2, 4, 6, 9, 13, 18, 25, 34,
   46, 62, 84, 113, 152, 205, 255 out of 255). The result is rounded up, so a lit
   colour never goes fully dark.
-- Don't use the LED pin in GPIO mappings. hid-remapper still treats it as a
-  remappable GPIO (it may set a pull-up on it and read it as an input). That
-  doesn't disturb the LED, but a mapping that reads or drives the same pin
-  would misbehave.
+- Don't use the LED pin or its power pin in GPIO mappings. hid-remapper still
+  treats them as remappable GPIOs (it may set a pull-up on them and read them
+  as inputs). That doesn't disturb the LED, but a mapping that reads or drives
+  the same pin would misbehave.
 
 ### Register 32: colour, `0xIIRRGGBB`
 
@@ -252,7 +278,7 @@ upstream.
 After the `target_link_libraries(remapper ...)` block:
 
 ```cmake
-include(rp2040-ws2812/ws2812.cmake OPTIONAL)
+include(rgb-led/ws2812.cmake OPTIONAL)
 ```
 
 The included file adds the driver source, the generated `ws2812.pio.h`, the

@@ -1,7 +1,7 @@
 #ifndef _WS2812_LED_H_
 #define _WS2812_LED_H_
 
-// expression register holding 0x00LOOOPP (see README.md), 0 = LED not used
+// expression register holding 0xWWLOOOPP (see README.md), 0 = LED not used
 #ifndef WS2812_SETTINGS_REGISTER
 #define WS2812_SETTINGS_REGISTER 31
 #endif
