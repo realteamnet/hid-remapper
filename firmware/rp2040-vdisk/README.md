@@ -14,7 +14,6 @@ Adds a small USB flash drive to HID Remapper (the `remapper` target, RP2040 and 
 
 - **Back up:** copy `config.json` from the drive.
 - **Restore or load:** copy a `.json` file into `APPLY`. About 1.5 seconds after the copy finishes, the drive disappears for 2.5 seconds and comes back. `config.json` then shows the new configuration, `STATUS.TXT` shows the result, and `APPLY` is empty again.
-- **Firmware update:** copy a firmware `.uf2` file into `APPLY`. The device restarts in firmware flashing mode (the same as "Flash firmware" in the web tool) and the `RPI-RP2` drive appears. Copy the `.uf2` file to that drive to flash it. The file copied into `APPLY` is only the trigger; it is not flashed.
 - The drive also reloads when the configuration is saved from the web tool, so `config.json` is never stale.
 - A change of the emulated device type takes effect after the device is replugged, as with the web tool.
 
@@ -61,5 +60,4 @@ Adds a small USB flash drive to HID Remapper (the `remapper` target, RP2040 and 
   - When the parsed file's first cluster matches an entry in `APPLY`, `vdisk_task()` assembles the 4 KB image, adds the CRC and passes it to `load_config()`, then requests a save to flash.
   - All other writes are accepted and dropped.
 - **Web tool:** `webtool.py` joins `index.html`, the four scripts and Bootstrap into one file (module imports removed, everything inline). `vdisk.cmake` links that file into the `.flashdata` section, so it stays in flash and is read from there; it follows `STATUS.TXT` on the volume and `config.json` follows it.
-- **UF2:** a data sector that starts a cluster with the UF2 magic numbers is remembered. When a file in `APPLY` starts at that cluster and writing has stopped for 1.5 seconds, `reset_to_bootloader()` is called.
 - **Reload:** after a change, test-unit-ready reports "medium not present" for 2.5 seconds, which makes the host mount the drive again.

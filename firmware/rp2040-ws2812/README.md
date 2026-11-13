@@ -124,6 +124,24 @@ and `WS2812_NUM_LEDS` (`1`; all LEDs show the same colour).
 "Save to device". It **replaces** the current config. It is written for GPIO16
 with RGB order; change the first line of expression 1 for another board.
 
+### Power-on colour
+
+The second line of expression 1 sets the colour shown at power-on and how long
+it stays:
+
+```
+0x400000FF 8 store 2 7 store
+```
+
+- `0x400000FF` (register 8) is the colour, in the usual `0xIIRRGGBB` form
+  (here blue at intensity 0x40). Colour names work too, e.g. `blue:40`.
+- `2` (register 7) is the time in seconds. After it, the LED shows the normal
+  colour for the current mode (white at power-on).
+- It appears about 1 ms after the firmware starts, whether or not a computer is
+  connected. Before that, the LED shows whatever it latched at power-up.
+- `0 7 store` turns it off. A very large time keeps the power-on colour until
+  the device is unplugged.
+
 ### What the keys do
 
 All keys still reach the computer, except Scroll Lock.
@@ -181,14 +199,15 @@ chosen index into a colour. The expressions run in order, every millisecond:
 
 | Expression | Elements | Stack | Job |
 | --- | --- | --- | --- |
-| 1 | 260 | 7 | LED settings; F keys → mode and brightness; number keys; layer change or number key → picked index. |
+| 1 | 268 | 7 | LED settings; power-on colour; F keys → mode and brightness; number keys; layer change or number key → picked index. |
 | 2 | 168 | 13 | Animation state and the animation colour. |
 | 3 | 235 | 3 | Hub ports: counts the ports in use, then finds the n-th one for the current 0.6 s slot. Ends with `0 port`. |
 | 4 | 201 | 4 | Gamepad: button index, and the stick colour. |
-| 5 | 163 | 5 | Picks the index for the mode, looks it up in the palette, adds the brightness, and lets the stick colour or animation override it. Writes register 32. |
+| 5 | 174 | 5 | Picks the index for the mode, looks it up in the palette, adds the brightness, and lets the stick colour, animation or power-on colour override it. Writes register 32. |
 
 | Register | Meaning |
 | --- | --- |
+| 7, 8 | power-on colour: seconds shown, colour |
 | 9, 10, 11 | stick hue angle, Y, X |
 | 12, 14, 15 | hub ports: current slot, running count, ports in use |
 | 13 | number key pressed while in mode 4 |
@@ -210,7 +229,7 @@ chosen index into a colour. The expressions run in order, every millisecond:
 **Limits when editing.** The stack is **16** deep. There is no limit on the
 length of one expression, but the whole config must fit in 4096 bytes when
 saved: each word costs 1 byte and each number or hex value 5 bytes (this
-example's expressions use 2471). Decimal numbers are x1000 internally; hex
+example's expressions use 2514). Decimal numbers are x1000 internally; hex
 values are used as-is. `time_sec` is in milliseconds on that scale and wraps
 after about 24 days. `sin` takes degrees. `round` gives whole numbers, so
 `round 0x10000 mul` places a 0-255 value in the red byte and

@@ -25,7 +25,7 @@ Test hardware: Waveshare RP2040-Zero clone, WS2812 on GPIO16, RGB order
 Docs outside the repo, in `D:\Devkit\hid-remapper-led\.claude\`:
 `ws2812-implementation.md` (how it works), `ws2812-changelog.md` (every change
 and why — keep it updated), `roadmap.md` (planned features and open to-dos),
-`bug-nlayers.md` (fork bug fix), `vdisk-implementation.md` (configuration drive).
+`bug-nlayers.md` and `bug-hubs.md` (fork bug fixes), `vdisk-implementation.md` (configuration drive).
 
 Sister module: `firmware/rp2040-vdisk/` (USB configuration drive: live
 `config.json`, `APPLY` drop folder). It has its own `README.md`; the rules
@@ -48,6 +48,9 @@ below apply to it too. Its upstream edits: one include line in
 - Separate fork bug fix (not part of this module, not gated):
   `firmware/src/remapper.cc:31` `NLAYERS = 4` → `8`. See
   `D:\Devkit\hid-remapper-led\.claude\bug-nlayers.md`.
+- Separate fork fix: `CFG_TUH_HUB` 1 → 4 in `src/tusb_config_both/tusb_config.h`
+  and `src/tusb_config_host/tusb_config.h` (hub behind a hub). See
+  `D:\Devkit\hid-remapper-led\.claude\bug-hubs.md`.
 - Don't change hid-remapper's layer/expression engine for LED features without
   asking the user.
 - Two separate registers for settings and colour (decided; don't multiplex).

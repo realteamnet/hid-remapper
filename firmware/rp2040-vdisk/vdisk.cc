@@ -63,9 +63,7 @@ static const char readme[] =
     "\r\n"
     JSON_NAME "  The current configuration. Copy it off the drive to back it up.\r\n"
     "APPLY        Copy a configuration .json file into this folder to load it\r\n"
-    "             and save it on the device. Copy a firmware .uf2 file into it\r\n"
-    "             to restart in firmware flashing mode; then copy the .uf2\r\n"
-    "             file to the RPI-RP2 drive that appears.\r\n"
+    "             and save it on the device.\r\n"
     "STATUS.TXT   Result of the last file copied into APPLY.\r\n"
 #ifdef VDISK_WEB_TOOL
     "WEBTOOL.HTM  The configuration tool. Open it in Chrome or Edge.\r\n"
@@ -185,8 +183,6 @@ static uint8_t dropped_next = 0;
 static char status[80] = "No file has been copied into APPLY yet.\r\n";
 static uint32_t json_size = 0;
 static bool apply_pending = false;
-static uint16_t uf2_cluster = 0;
-static bool bootloader_pending = false;
 static bool changed = false;
 static bool host_ejected = false;
 static uint64_t last_write = 0;
@@ -836,11 +832,6 @@ static void set_status(const char* prefix, const char* text) {
 }
 
 static void check_dropped() {
-    for (auto const& d : dropped) {
-        if ((uf2_cluster != 0) && (d.cluster == uf2_cluster)) {
-            bootloader_pending = true;
-        }
-    }
     if ((im.state == IDLE) || apply_pending) {
         return;
     }
@@ -881,11 +872,6 @@ static void write_sector(uint32_t lba, const uint8_t* buf) {
             dropped_next = (dropped_next + 1) % (sizeof(dropped) / sizeof(dropped[0]));
         }
     } else {
-        uint32_t magic[2];
-        memcpy(magic, buf, 8);
-        if (cluster_start && (magic[0] == 0x0A324655) && (magic[1] == 0x9E5D5157)) {
-            uf2_cluster = cluster;
-        }
         bool next = (im.state == PARSING) && (lba == im.next_lba);
         if (!next && cluster_start && !apply_pending && looks_like_json(buf)) {
             im = import_t();
@@ -962,10 +948,6 @@ void vdisk_task() {
     if (now - last_write <= QUIET_US) {
         return;
     }
-    if (bootloader_pending) {
-        bootloader_pending = false;
-        reset_to_bootloader();
-    }
     if (!changed && (dropped[0].cluster != 0)) {
         set_status("ERROR: ", (im.state == FAILED) ? im.error : "file is not a configuration");
     }
@@ -975,7 +957,6 @@ void vdisk_task() {
         json_size = 0;
         im = import_t();
         memset(dropped, 0, sizeof(dropped));
-        uf2_cluster = 0;
         eject_until = now + EJECT_US;
     }
 }
