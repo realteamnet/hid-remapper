@@ -44,7 +44,7 @@ The K400's Fn lock (F1-F12 or media keys first) is normally switched by Logitech
 
 | Model | Feature index | F-keys first | Media keys first | Source |
 | --- | --- | --- | --- | --- |
-| K400r (and K400) | `0F` | `10 01 0F 1A 00 00 00` | `10 01 0F 1A 01 00 00` | Read from a K400r (wireless PID `4024`) and confirmed on it, 2026-11-13. The original K400 shares that wireless PID family; assumed the same, not tested. |
+| K400r (and K400) | `0F` | `10 01 0F 1A 00 00 00` | `10 01 0F 1A 01 00 00` | Read from a K400r (wireless PID `4024`) and confirmed on it, 2026-11-13. Then confirmed through the remapper with this example: the receiver answers `11 01 0F 1A 00 01 ...` / `... 01 01 ...`. While the keyboard sleeps it answers `10 01 8F 0F 1A 09 00` (HID++ error 09); the 5 s resend gets through once it wakes. The original K400 shares that wireless PID family; assumed the same, not tested. |
 | K400 Plus | `09` | `10 01 09 19 00 00 00` | `10 01 09 18 01 00 00` | From github.com/h8man/k400p-fn-lock-win and github.com/sginne/fn_key_k400_for_logitech; not tested here. |
 
 `01` is the keyboard's slot on its receiver. The receiver is the same (`C52B`) for all models, so the firmware can't tell which model is behind it. The config says so.
