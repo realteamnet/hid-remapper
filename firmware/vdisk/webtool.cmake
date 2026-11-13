@@ -23,8 +23,6 @@ read_source(crc.js crc_js)
 read_source(usages.js usages_js)
 read_source(examples.js examples_js)
 read_source(code.js code_js)
-file(READ ${DEMO} demo)
-file(READ ${DEMO2} demo2)
 
 string(REPLACE "export default function" "function" crc_js "${crc_js}")
 string(REGEX REPLACE "\nexport default [A-Za-z_]+;" "\n" usages_js "${usages_js}")
@@ -32,8 +30,17 @@ string(REGEX REPLACE "\nexport default [A-Za-z_]+;" "\n" examples_js "${examples
 string(REGEX REPLACE "(^|\n)import [^\n]*" "\\1" code_js "${code_js}")
 
 fail_unless_once("${examples_js}" "const examples = [" "'const examples = [' in examples.js")
-string(REPLACE "const examples = [" "const examples = [\n{'description': 'RGB LED demo (WS2812 on GPIO16): Ctrl+Alt+F1-F5 modes, keys 1-0 colours, Scroll Lock cycles layers', 'config': ${demo}},
-{'description': 'Logitech K400 / K400r / K400 Plus: Fn+Esc toggles Fn lock (needs the hidout module)', 'config': ${demo2}}," examples_js "${examples_js}")
+# the examples of the modules in this build (DEMO / DEMO2 are empty when the module is off)
+set(demos "")
+if(DEMO)
+    file(READ ${DEMO} demo)
+    string(APPEND demos "\n{'description': 'RGB LED demo (WS2812 on GPIO16): Ctrl+Alt+F1-F5 modes, keys 1-0 colours, Scroll Lock cycles layers', 'config': ${demo}},")
+endif()
+if(DEMO2)
+    file(READ ${DEMO2} demo2)
+    string(APPEND demos "\n{'description': 'Logitech K400 / K400r / K400 Plus: Fn+Esc toggles Fn lock', 'config': ${demo2}},")
+endif()
+string(REPLACE "const examples = [" "const examples = [${demos}" examples_js "${examples_js}")
 
 set(app_js "${crc_js}\n${usages_js}\n${examples_js}\n${code_js}")
 string(REGEX MATCH "(^|\n)(import|export) " leftover "${app_js}")

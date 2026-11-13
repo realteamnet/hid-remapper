@@ -5,7 +5,7 @@ Adds a small USB flash drive to HID Remapper (the `remapper` target, RP2040 and 
 | On the drive | What it is |
 | --- | --- |
 | `config.json` | The current configuration, in the same JSON format as the web config tool. It is generated from the live configuration when it is read. Copy it off to make a backup. |
-| `config.html` | The web config tool as one self-contained file. Open it in Chrome or Edge; it needs no internet connection. Its Examples list starts with the RGB LED demo (`firmware/ws2812/ws2812_example.json`) and the Logitech K400 Fn lock example (`firmware/hidout/hidout_example.json`). |
+| `config.html` | The web config tool as one self-contained file. Open it in Chrome or Edge; it needs no internet connection. Its Examples list starts with the RGB LED demo (`firmware/ws2812/ws2812_example.json`) and the Logitech K400 Fn lock example (`firmware/hidout/hidout_example.json`), each only when its module (`ws2812`, `hidout`) is in the build. |
 | `DEBUG.TXT` | Debug builds only (`-DVDISK_DEBUG=ON`). Debug log, the last 4 KB (e.g. from the `hidout` module). Always exactly 4096 bytes (blank-padded), so the drive never remounts for it; read it uncached (e.g. `FILE_FLAG_NO_BUFFERING`) to see new lines, because a normal read may return Windows' cached copy. |
 | `autorun.inf` | Hidden, system, read-only. Only `label=HID-REMAPPER`, so Windows shows the drive as HID-REMAPPER (the FAT volume label, `HIDREMAPPER`, is limited to 11 characters). It starts nothing. |
 | `readme.txt` | A short description of the above. |
@@ -64,7 +64,7 @@ The build stops with an error if `src/config.cc` has a different `CONFIG_VERSION
   - All other writes are accepted and dropped.
 - **Web tool:** built with CMake only.
   1. At configure time `vdisk.cmake` downloads Bootstrap 5.1.3 (CSS and JS) from the same CDN URLs as `index.html` and checks them against the same SHA-384 hashes. It stops if `index.html` refers to other files.
-  2. `webtool.cmake` joins `crc.js`, `usages.js`, `examples.js` and `code.js` with their `import`/`export` lines removed, adds the two example configs as the first examples. It then strips the indentation from `index.html` and puts Bootstrap and the minified script into it inline (about 740 KB).
+  2. `webtool.cmake` joins `crc.js`, `usages.js`, `examples.js` and `code.js` with their `import`/`export` lines removed, adds the example configs of the modules in the build as the first examples (`vdisk.cmake` passes each one only if `WS2812_ENABLED` / `HIDOUT_ENABLED` is among the `remapper` target's compile definitions, checked with a generator expression after all modules are configured). It then strips the indentation from `index.html` and puts Bootstrap and the minified script into it inline (about 740 KB).
   3. It strips indentation and blank lines from the joined scripts, gzips the page with CMake's own `file(ARCHIVE_CREATE ... FORMAT raw COMPRESSION GZip)`, encodes the result as base64 (in CMake, from the hex it reads), and writes `config.html` as a short loader that decodes it with the browser's own base64 decoder and `DecompressionStream` and replaces itself with the page. About 106 KB (the page itself is about 540 KB). With CMake older than 3.19 the page is written unpacked.
   `vdisk.cmake` links the file into the `.flashdata` section, so it stays in flash and is read from there; `config.json` follows it on the volume.
 - The scripts are not minified: gzip removes almost the same redundancy (minifying first would save about 10 KB of the final file).

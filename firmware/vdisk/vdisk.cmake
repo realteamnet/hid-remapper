@@ -61,12 +61,15 @@ if(VDISK_ENABLE)
         file(DOWNLOAD ${VDISK_BOOTSTRAP_URL}/js/bootstrap.min.js ${CMAKE_CURRENT_BINARY_DIR}/vdisk_bootstrap.min.js
             EXPECTED_HASH SHA384=${VDISK_BOOTSTRAP_JS_SHA384})
 
+        # an example is only added when its module is in this build; generator expressions are
+        # evaluated after every module's .cmake has run, so the include order doesn't matter
+        set(VDISK_DEFS $<TARGET_PROPERTY:remapper,COMPILE_DEFINITIONS>)
         add_custom_command(
             OUTPUT ${VDISK_TOOL_HTML}
             COMMAND ${CMAKE_COMMAND}
                 -DSRC=${VDISK_TOOL_SRC}
-                -DDEMO=${VDISK_DEMO}
-                -DDEMO2=${VDISK_DEMO2}
+                -DDEMO=$<$<IN_LIST:WS2812_ENABLED,${VDISK_DEFS}>:${VDISK_DEMO}>
+                -DDEMO2=$<$<IN_LIST:HIDOUT_ENABLED,${VDISK_DEFS}>:${VDISK_DEMO2}>
                 -DCSS=${CMAKE_CURRENT_BINARY_DIR}/vdisk_bootstrap.min.css
                 -DBOOTSTRAP_JS=${CMAKE_CURRENT_BINARY_DIR}/vdisk_bootstrap.min.js
                 -DOUT=${VDISK_TOOL_HTML}
