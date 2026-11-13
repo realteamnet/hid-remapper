@@ -77,14 +77,14 @@
         []
     ],
     "expressions": [
-        "/* Fn lock for the Logitech K400 family, sent by the hidout module using the table in expression 8 */ eol /* keyboard model: 0x1 = K400 or K400r, 0x2 = K400 Plus */ eol 0x1 2000 store eol /* Fn lock at boot: 0x1 = F-keys first, 0x2 = media keys first */ eol 6000 recall 0 eq 0x1 6000 recall ifte 6000 store eol /* Fn+Esc (reported as Power) toggles it */ eol 0x00070066 input_state_binary 0x00070066 prev_input_state_binary not mul eol 0x3 6000 recall sub 6000 recall ifte 6000 store eol /* select table line 0-3 (bit 0x1-0x8); 0 for one tick every 5 s so it is sent again after the keyboard was off */ eol 2000 recall 0x1 eq 6000 recall 0x1 eq 0x1 0x2 ifte 6000 recall 0x1 eq 0x4 0x8 ifte ifte eol time_sec 5000 mod 1 lt not mul 1000 store",
+        "/* Fn lock for the Logitech K400 family, sent by the hidout module */ eol /* table, one message per line: length, the report as 32-bit words (report ID first), the target device. Keep the lines for your keyboard. */ eol /* line 0: K400 / K400r, F-keys first (FN_INVERSION at index 0F, confirmed on a K400r) */ eol 7000 0x10010F1A 0x00000000 0x046DC52B eol /* line 1: K400 / K400r, media keys first */ eol 7000 0x10010F1A 0x01000000 0x046DC52B eol /* K400 Plus (index 09, not tested): use these two lines instead of lines 0 and 1, without the comment marks */ eol /* 7 0x10010919 0x00000000 0x046DC52B */ eol /* 7 0x10010918 0x01000000 0x046DC52B */ eol /* Fn lock at boot: 0x1 = F-keys first, 0x2 = media keys first */ eol 6000 recall 0 eq 0x1 6000 recall ifte 6000 store eol /* Fn+Esc (reported as Power) toggles it */ eol 0x00070066 input_state_binary 0x00070066 prev_input_state_binary not mul eol 0x3 6000 recall sub 6000 recall ifte 6000 store eol /* send line 0 or 1 (selector bit 0x1 / 0x2); 0 for one tick every 5 s so it is sent again after the keyboard was off */ eol 6000 recall 0x1 eq 0x1 0x2 ifte time_sec 5000 mod 1 lt not mul 1000 store",
         "",
         "",
         "",
         "",
         "",
         "",
-        "/* hidout table, one message per line: length in bytes, the report as 32-bit words (report ID first), then the target devices */ eol /* line 0: K400 / K400r, F-keys first (FN_INVERSION at index 0F, confirmed on a K400r) */ eol 7000 0x10010F1A 0x00000000 0x046DC52B eol /* line 1: K400 / K400r, media keys first */ eol 7000 0x10010F1A 0x01000000 0x046DC52B eol /* line 2: K400 Plus, F-keys first (index 09, from k400p-fn-lock-win, not tested here) */ eol 7000 0x10010919 0x00000000 0x046DC52B eol /* line 3: K400 Plus, media keys first */ eol 7000 0x10010918 0x01000000 0x046DC52B"
+        ""
     ],
     "quirks": []
 }

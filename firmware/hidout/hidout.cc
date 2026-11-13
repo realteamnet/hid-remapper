@@ -22,7 +22,7 @@
 
 extern int32_t registers[];  // remapper.cc
 
-// LOG.TXT on the config drive, if the vdisk module is built in
+// DEBUG.TXT on the config drive, on vdisk debug builds
 void vdisk_log(const char* fmt, ...) __attribute__((weak, format(printf, 1, 2)));
 #define LOG(...)                    \
     do {                            \
@@ -32,7 +32,6 @@ void vdisk_log(const char* fmt, ...) __attribute__((weak, format(printf, 1, 2)))
     } while (0)
 
 static_assert((HIDOUT_REGISTER >= 1) && (HIDOUT_REGISTER <= 32));
-static_assert((HIDOUT_TABLE >= 1) && (HIDOUT_TABLE <= NEXPRESSIONS));
 
 struct line_t {
     uint8_t report_id;
@@ -87,42 +86,56 @@ static void log_devices() {
 
 // A line is <length in bytes, decimal> <report as 32-bit words, report ID first> <targets>, ended by eol.
 // Lines without values (e.g. comment-only lines) are not counted.
+// Table lines are lines (ended by eol) that hold only numbers, in any expression, numbered in
+// order from expression 1. Lines with operations and empty lines are not table lines.
+static void add_line(std::vector<line_t>& lines, const std::vector<uint32_t>& vals) {
+    if (lines.size() >= MAX_LINES) {
+        return;
+    }
+    line_t line = {};
+    uint32_t len = vals[0];
+    uint32_t words = (len + 3) / 4;
+    if ((len >= 2) && (len <= MAX_DATA + 1) && (vals.size() >= 1 + words)) {
+        for (uint32_t b = 0; b < len; b++) {
+            uint8_t byte = vals[1 + b / 4] >> (24 - 8 * (b % 4));
+            if (b == 0) {
+                line.report_id = byte;
+            } else {
+                line.data[b - 1] = byte;
+            }
+        }
+        line.len = len - 1;
+        line.targets.assign(vals.begin() + 1 + words, vals.end());
+    }
+    lines.push_back(line);  // a malformed line keeps its number but has report ID 0 and is never sent
+}
+
 static uint32_t parse_table(std::vector<line_t>& lines) {
     uint32_t hash = 2166136261u;
     std::vector<uint32_t> vals;
     my_mutex_enter(MutexId::EXPRESSIONS);
-    auto const& expr = expressions[HIDOUT_TABLE - 1];
-    for (size_t i = 0; i <= expr.size(); i++) {
-        bool eol = (i == expr.size()) || (expr[i].op == Op::EOL);
-        if (!eol) {
-            hash = (hash ^ (uint8_t) expr[i].op ^ expr[i].val) * 16777619u;
-            if ((expr[i].op == Op::PUSH) || (expr[i].op == Op::PUSH_USAGE)) {
-                vals.push_back(((vals.empty()) && (expr[i].op == Op::PUSH)) ? expr[i].val / 1000 : expr[i].val);
-            }
-            continue;
-        }
-        if (vals.empty()) {
-            continue;
-        }
-        line_t line = {};
-        uint32_t len = vals[0];
-        uint32_t words = (len + 3) / 4;
-        if ((len >= 2) && (len <= MAX_DATA + 1) && (vals.size() >= 1 + words) && (lines.size() < MAX_LINES)) {
-            for (uint32_t b = 0; b < len; b++) {
-                uint8_t byte = vals[1 + b / 4] >> (24 - 8 * (b % 4));
-                if (b == 0) {
-                    line.report_id = byte;
-                } else {
-                    line.data[b - 1] = byte;
-                }
-            }
-            line.len = len - 1;
-            line.targets.assign(vals.begin() + 1 + words, vals.end());
-            lines.push_back(line);
-        } else if (lines.size() < MAX_LINES) {
-            lines.push_back(line);  // malformed: keeps its line number, never sent
-        }
+    for (auto const& expr : expressions) {
+        bool numbers_only = true;
         vals.clear();
+        for (size_t i = 0; i <= expr.size(); i++) {
+            if ((i < expr.size()) && (expr[i].op != Op::EOL)) {
+                if ((expr[i].op == Op::PUSH) || (expr[i].op == Op::PUSH_USAGE)) {
+                    vals.push_back((vals.empty() && (expr[i].op == Op::PUSH)) ? expr[i].val / 1000 : expr[i].val);
+                } else {
+                    numbers_only = false;
+                }
+                continue;
+            }
+            if (numbers_only && !vals.empty()) {
+                for (uint32_t v : vals) {
+                    hash = (hash ^ v) * 16777619u;
+                }
+                hash = (hash ^ 0xEE) * 16777619u;
+                add_line(lines, vals);
+            }
+            numbers_only = true;
+            vals.clear();
+        }
     }
     my_mutex_exit(MutexId::EXPRESSIONS);
     return hash;
@@ -221,7 +234,7 @@ void hidout_task() {
     bool table_changed = hash != prev_table_hash;
     prev_table_hash = hash;
     if (table_changed) {
-        LOG("hidout: table in expression %d has %u lines", HIDOUT_TABLE, (unsigned) lines.size());
+        LOG("hidout: table has %u lines", (unsigned) lines.size());
         for (uint32_t n = 0; n < lines.size(); n++) {
             if (lines[n].report_id == 0) {
                 LOG("hidout: line %u is malformed and is never sent", (unsigned) n);

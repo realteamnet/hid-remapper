@@ -146,7 +146,7 @@ and `WS2812_NUM_LEDS` (`1`; all LEDs show the same colour).
 
 ## Example config
 
-`ws2812_example.json`: import it in the web config tool (the copy on the config drive, `WEBTOOL.HTM`, lists it first under Examples), then
+`ws2812_example.json`: import it in the web config tool (the copy on the config drive, `config.html`, lists it first under Examples), then
 "Save to device". It **replaces** the current config. It is written for GPIO16
 with RGB order; change the first line of expression 1 for another board.
 
@@ -170,8 +170,7 @@ it stays:
 
 ### What the keys do
 
-All keys still reach the computer, except Scroll Lock and F1-F8 while Ctrl+Alt
-is held.
+All keys still reach the computer, except Scroll Lock (including Ctrl+Alt+F1-F8).
 
 Hold **Ctrl and Alt** (either side) and press F1-F8 to pick the mode:
 
@@ -184,9 +183,9 @@ Hold **Ctrl and Alt** (either side) and press F1-F8 to pick the mode:
 | F5 | Gamepad | Each button lights its own colour while it is held. With no button held, the sticks set the colour. |
 | F6-F8 | Unused | The LED keeps the picked colour; the number keys do nothing. |
 
-- Plain F1-F8 do not change the mode and reach the computer as usual.
-- With Ctrl+Alt held, F1-F8 are **not** sent to the computer; Ctrl and Alt
-  themselves still are. F9-F12 are not used and always pass through.
+- Plain F1-F8 do not change the mode.
+- Ctrl+Alt+F1-F8 also reach the computer. Blocking them would need one
+  register and two mappings per key, so the example does not.
 - **Brightness.** F1 and F2 also set the brightness used by modes 3 and 5 and
   by F6-F8.
 - **Scroll Lock** steps through the 8 layers. Each layer change picks colour
@@ -226,18 +225,12 @@ indexes 1-9 and buttons 10-13 use 11-14.
 (k = 0-6). Each press latches the next layer and releases the current one. On
 layer 7 nothing latches, the release clears it, and layer 0 is back.
 
-**Blocking Ctrl+Alt+F1-F8.** hid-remapper can only block a key per layer, and
-a key that is unmapped on the active colour layer would still pass through. So
-F1-F8 are each mapped to Nothing on every layer, and expression 1 writes
-"F key pressed and Ctrl+Alt not held" into one register per key (12-15, 17,
-21, 23, 24). Mappings Register → F key send them on. This costs no layer.
-
 Every colour source produces a palette **index**, and one expression turns the
 chosen index into a colour. The expressions run in order, every millisecond:
 
 | Expression | Elements | Stack | Job |
 | --- | --- | --- | --- |
-| 1 | 335 | 7 | LED settings; power-on colour; Ctrl+Alt+F keys → mode and brightness; F1-F8 pass-through registers; number keys; layer change or number key → picked index. |
+| 1 | 262 | 7 | LED settings; power-on colour; Ctrl+Alt+F keys → mode and brightness; number keys; layer change or number key → picked index. |
 | 2 | 168 | 13 | Animation state and the animation colour. |
 | 3 | 235 | 3 | Hub ports: counts the ports in use, then finds the n-th one for the current 0.6 s slot. Ends with `0 port`. |
 | 4 | 201 | 4 | Gamepad: button index, and the stick colour. |
@@ -247,7 +240,6 @@ chosen index into a colour. The expressions run in order, every millisecond:
 | --- | --- |
 | 7, 8 | power-on colour: seconds shown, colour |
 | 9, 10, 11 | scratch values, reused by every expression (F key and Ctrl+Alt state; animation time and angle; hub port counters; stick X, Y, hue; index being shown) |
-| 12-15, 17, 21, 23, 24 | F1-F8 on their way to the computer (0 while Ctrl+Alt is held); mapping sources |
 | 16 | gamepad button index (0 = none) |
 | 18 | number key held (1-9, 10 for the 0 key, 0 = none) |
 | 19 | brightness as `0xII000000` |

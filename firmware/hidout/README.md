@@ -7,7 +7,7 @@ Lets a hid-remapper config **send HID output reports to the devices plugged into
 
 ## The table
 
-The table is an ordinary expression, by default **expression 8** (`HIDOUT_TABLE`). Each line is one message:
+Table lines are the expression lines (ended by a line break) that hold **only numbers**, in any expression. They can sit next to the logic in the same expression. Each one is one message:
 
 ```
 <length> <report words...> <targets...>
@@ -19,10 +19,10 @@ The table is an ordinary expression, by default **expression 8** (`HIDOUT_TABLE`
 | `<report words>` | The report as 32-bit hex words, first byte first, **report ID first**: `10 01 0F 1A 00 00 00` is written `0x10010F1A 0x00000000`. As many words as the length needs (`7` → 2 words); unused bytes of the last word are ignored. |
 | `<targets>` | Any number of devices, any mix of: `0xVVVV` = every product of vendor VVVV; `0xVVVVPPPP` = exactly that VID:PID. **No targets = any device** that declares an output report with that report ID. |
 
-- **Line numbers** count only lines that have values, from 0. Comment-only lines don't count, so each message can have a comment line above it.
+- **Line numbers** count table lines only, from 0, starting in expression 1 and continuing through expression 8. Comment-only lines and lines with any operation (`store`, `recall`, ...) don't count, so each message can have a comment line above it, and a line commented out with `/* */` is not a table line.
 - **Comments** are not stored on the device, so a config read back from the device shows the table without them.
 - **Malformed lines** (too few words for the length, a length below 2, or report ID 0) keep their line number but are never sent.
-- **Evaluation:** hid-remapper also evaluates the table every tick as if it were a normal expression. It only pushes numbers, which is harmless. With more than 16 values hid-remapper marks it invalid and skips it, which is harmless too, because `hidout` reads the table directly.
+- **Evaluation:** hid-remapper also evaluates the table lines as part of their expression, so each line's values are pushed and stay on the stack. Keep the expression within the 16-deep stack (a 7-byte line with one target pushes 4 values). If it overflows, hid-remapper skips the whole expression, including any logic in it; `hidout` still reads the table directly.
 
 ## The selector register
 
@@ -49,33 +49,26 @@ The K400's Fn lock (F1-F12 or media keys first) is normally switched by Logitech
 
 `01` is the keyboard's slot on its receiver. The receiver is the same (`C52B`) for all models, so the firmware can't tell which model is behind it. The config says so.
 
-Expression 8, the table:
+Everything is in expression 1, the table and the logic:
 ```
-/* line 0: K400 / K400r, F-keys first */
+/* line 0: K400 / K400r, F-keys first (FN_INVERSION at index 0F, confirmed on a K400r) */
 7 0x10010F1A 0x00000000 0x046DC52B
 /* line 1: K400 / K400r, media keys first */
 7 0x10010F1A 0x01000000 0x046DC52B
-/* line 2: K400 Plus, F-keys first */
-7 0x10010919 0x00000000 0x046DC52B
-/* line 3: K400 Plus, media keys first */
-7 0x10010918 0x01000000 0x046DC52B
-```
-
-Expression 1, the logic:
-```
-/* keyboard model: 0x1 = K400 or K400r, 0x2 = K400 Plus */
-0x1 2 store
+/* K400 Plus (index 09, not tested): use these two lines instead of lines 0 and 1, without the comment marks */
+/* 7 0x10010919 0x00000000 0x046DC52B */
+/* 7 0x10010918 0x01000000 0x046DC52B */
 /* Fn lock at boot: 0x1 = F-keys first, 0x2 = media keys first */
 6 recall 0 eq 0x1 6 recall ifte 6 store
 /* Fn+Esc (reported as Power) toggles it */
 0x00070066 input_state_binary 0x00070066 prev_input_state_binary not mul
 0x3 6 recall sub 6 recall ifte 6 store
-/* select table line 0-3; 0 for one tick every 5 s so it is sent again */
-2 recall 0x1 eq 6 recall 0x1 eq 0x1 0x2 ifte 6 recall 0x1 eq 0x4 0x8 ifte ifte
-time_sec 5 mod 0.001 lt not mul 1 store
+/* send line 0 or 1; 0 for one tick every 5 s so it is sent again */
+6 recall 0x1 eq 0x1 0x2 ifte time_sec 5 mod 0.001 lt not mul 1 store
 ```
 
-- **Settings:** the keyboard model (register 2) and the Fn lock at boot (the `0x1` in the second line) are at the top. Register 6 holds the current state.
+- **Model:** keep the two lines for your keyboard and leave the other model's lines commented out. Comments are not stored on the device, so the commented lines are gone when the config is read back.
+- **Settings:** the Fn lock at boot is the `0x1` after `0 eq`. Register 6 holds the current state, register 1 is the selector. The table lines leave 8 values on the stack (peak 11 of 16).
 - **Map Power (`0x00070066`) → Nothing** on every layer (the example does). On the K400 family Fn+Esc reaches the host as Power, and the computer would otherwise sleep or shut down with every press.
 - **Resend every 5 s:** the keyboard forgets the setting when it is switched off. The selector is 0 for one tick every 5 s, so the setting comes back within 5 s after the keyboard wakes. While the keyboard is off, the receiver just answers with an error. Change `5` to resend less often.
 - **Raw values:** use hex (`0x1`) for raw values; plain decimals are stored ×1000. The table's length is the one decimal: the firmware divides it by 1000.
@@ -84,7 +77,7 @@ time_sec 5 mod 0.001 lt not mul 1 store
 
 ## Debugging
 
-- **`LOG.TXT`** on the config drive (when the `vdisk` module is built in): the table (line count, malformed lines), every change of the selector, the connected interfaces with their VID:PID and output report IDs, and per line how many interfaces have the report, how many match, and where it was sent. Repeated resends with the same result are not logged again. For 2 s after each send, up to 8 input reports from the interface it was sent to are logged too (`reply from interface ...`): a HID++ device answers with its result or an error there.
+- **`DEBUG.TXT`** on the config drive (debug builds of the `vdisk` module, `-DVDISK_DEBUG=ON`): the table (line count, malformed lines), every change of the selector, the connected interfaces with their VID:PID and output report IDs, and per line how many interfaces have the report, how many match, and where it was sent. Repeated resends with the same result are not logged again. For 2 s after each send, up to 8 input reports from the interface it was sent to are logged too (`reply from interface ...`): a HID++ device answers with its result or an error there.
 - **Monitor tab** of the web tool (while monitoring is on): `0xFFFE00nn` = line `nn` sent (value: interface), `0xFFFE01nn` = interfaces with its report ID, `0xFFFE02nn` = interfaces that also match its targets.
 
 ## Build
@@ -93,7 +86,6 @@ time_sec 5 mod 0.001 lt not mul 1 store
 | --- | --- | --- |
 | `HIDOUT_ENABLE` | `ON` | Build the module into `remapper`. |
 | `HIDOUT_REGISTER` | `1` | The selector register (1-32). |
-| `HIDOUT_TABLE` | `8` | The expression that holds the table (1-8). |
 
 ## Changes to hid-remapper's own files
 

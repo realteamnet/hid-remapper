@@ -6,9 +6,6 @@ endif()
 if(NOT DEFINED HIDOUT_REGISTER)
     set(HIDOUT_REGISTER 1)
 endif()
-if(NOT DEFINED HIDOUT_TABLE)
-    set(HIDOUT_TABLE 8)
-endif()
 
 if(HIDOUT_ENABLE)
     target_sources(remapper PRIVATE ${CMAKE_CURRENT_LIST_DIR}/hidout.cc)
@@ -16,6 +13,5 @@ if(HIDOUT_ENABLE)
     target_compile_definitions(remapper PRIVATE
         HIDOUT_ENABLED
         HIDOUT_REGISTER=${HIDOUT_REGISTER}
-        HIDOUT_TABLE=${HIDOUT_TABLE}
     )
 endif()

@@ -36,16 +36,21 @@ extern const uint8_t vdisk_tool_end[];
 #define TOOL_SIZE 0u
 #endif
 
-#define APPLY_CLUSTER 2
-#define README_CLUSTER 3
-#define STATUS_CLUSTER 4
-#define LOG_CLUSTER 5
-#define TOOL_CLUSTER 6
+#define README_CLUSTER 2
+#define AUTORUN_CLUSTER 3
+#ifdef VDISK_DEBUG
+#define DEBUG_CLUSTER 4
+#define TOOL_CLUSTER 5
+#else
+#define TOOL_CLUSTER 4
+#endif
 #define JSON_CLUSTER (TOOL_CLUSTER + (TOOL_SIZE + CLUSTER - 1) / CLUSTER)
 
 #define VOLUME_LABEL "HIDREMAPPER"
 #define JSON_NAME "config.json"
 #define JSON_SHORT_NAME "CONFIG~1JSO"
+#define TOOL_NAME "config.html"
+#define TOOL_SHORT_NAME "CONFIG~1HTM"
 
 #define QUIET_US 1500000
 #define LOG_SIZE CLUSTER
@@ -60,16 +65,20 @@ extern const uint8_t vdisk_tool_end[];
 #define TAP_FLAG (1 << 1)
 #define HOLD_FLAG (1 << 2)
 
+static const char autorun[] = "[autorun]\r\nlabel=HID-REMAPPER\r\n";
+
 static const char readme[] =
     "HID Remapper configuration drive\r\n"
     "\r\n"
     JSON_NAME "  The current configuration. Copy it off the drive to back it up.\r\n"
-    "APPLY        Copy a configuration .json file into this folder to load it\r\n"
-    "             and save it on the device.\r\n"
-    "STATUS.TXT   Result of the last file copied into APPLY.\r\n"
-    "LOG.TXT      Debug log (the last 4 KB), e.g. from the hidout module.\r\n"
+    "             Copy a configuration .json file onto the drive (any name, or\r\n"
+    "             over " JSON_NAME ") to load it and save it on the device. If it is\r\n"
+    "             not a valid configuration, the configuration is left as it was.\r\n"
+#ifdef VDISK_DEBUG
+    "DEBUG.TXT    Debug log (the last 4 KB), e.g. from the hidout module.\r\n"
+#endif
 #ifdef VDISK_WEB_TOOL
-    "WEBTOOL.HTM  The configuration tool. Open it in Chrome or Edge.\r\n"
+    TOOL_NAME "  The configuration tool. Open it in Chrome or Edge.\r\n"
 #endif
     "\r\n"
     "The drive is rebuilt from the device every time, so nothing else that is\r\n"
@@ -186,14 +195,17 @@ static struct {
 } dropped[4];
 static uint8_t dropped_next = 0;
 
-static char status[80] = "No file has been copied into APPLY yet.\r\n";
 static uint32_t json_size = 0;
 static bool apply_pending = false;
 static bool changed = false;
 static bool host_ejected = false;
 static uint64_t last_write = 0;
+#ifdef VDISK_DEBUG
 static char log_buf[LOG_SIZE];
 static uint32_t log_total = 0;
+#else
+#define vdisk_log(...)
+#endif
 static uint64_t eject_until = 0;
 
 static uint8_t* out_buf;
@@ -396,7 +408,8 @@ static void text_sector(const char* text, uint32_t offset, uint8_t* buf) {
     }
 }
 
-// LOG.TXT always has LOG_SIZE bytes (newest lines first, blank-padded), so its directory
+#ifdef VDISK_DEBUG
+// DEBUG.TXT always has LOG_SIZE bytes (newest lines first, blank-padded), so its directory
 // entry never changes and an uncached read sees new lines without a remount.
 static void log_sector(uint32_t offset, uint8_t* buf) {
     uint32_t used = (log_total < LOG_SIZE) ? log_total : LOG_SIZE;
@@ -419,6 +432,7 @@ void vdisk_log(const char* fmt, ...) {
         log_buf[log_total++ % LOG_SIZE] = *c;
     }
 }
+#endif
 
 static void read_sector(uint32_t lba, uint8_t* buf) {
     static const uint8_t boot[] = {
@@ -439,30 +453,32 @@ static void read_sector(uint32_t lba, uint8_t* buf) {
         fat_sector((lba - FAT_LBA) % FAT_SECTORS, buf);
     } else if (lba == ROOT_LBA) {
         dir_entry(buf, VOLUME_LABEL, 0x08, 0, 0);
-        dir_entry(buf + 32, "APPLY      ", 0x10, APPLY_CLUSTER, 0);
+        lfn_entry(buf + 32, "readme.txt", "README  TXT");
         dir_entry(buf + 64, "README  TXT", 0x20, README_CLUSTER, sizeof(readme) - 1);
-        dir_entry(buf + 96, "STATUS  TXT", 0x20, STATUS_CLUSTER, strlen(status));
-        lfn_entry(buf + 128, JSON_NAME, JSON_SHORT_NAME);
+        lfn_entry(buf + 96, JSON_NAME, JSON_SHORT_NAME);
         json_clusters();
-        dir_entry(buf + 160, JSON_SHORT_NAME, 0x20, JSON_CLUSTER, json_size);
+        dir_entry(buf + 128, JSON_SHORT_NAME, 0x20, JSON_CLUSTER, json_size);
+        dir_entry(buf + 160, "AUTORUN INF", 0x27, AUTORUN_CLUSTER, sizeof(autorun) - 1);
+        uint8_t* e = buf + 192;
         if (TOOL_SIZE > 0) {
-            dir_entry(buf + 192, "WEBTOOL HTM", 0x20, TOOL_CLUSTER, TOOL_SIZE);
+            lfn_entry(e, TOOL_NAME, TOOL_SHORT_NAME);
+            dir_entry(e + 32, TOOL_SHORT_NAME, 0x20, TOOL_CLUSTER, TOOL_SIZE);
+            e += 64;
         }
-        dir_entry(buf + 224, "LOG     TXT", 0x20, LOG_CLUSTER, LOG_SIZE);
+#ifdef VDISK_DEBUG
+        dir_entry(e, "DEBUG   TXT", 0x20, DEBUG_CLUSTER, LOG_SIZE);
+#endif
     } else if (lba >= DATA_LBA) {
         uint32_t cluster = 2 + (lba - DATA_LBA) / SECTORS_PER_CLUSTER;
         uint32_t offset = (lba - DATA_LBA) % SECTORS_PER_CLUSTER * SECTOR;
-        if (cluster == APPLY_CLUSTER) {
-            if (offset == 0) {
-                dir_entry(buf, ".          ", 0x10, APPLY_CLUSTER, 0);
-                dir_entry(buf + 32, "..         ", 0x10, 0, 0);
-            }
-        } else if (cluster == README_CLUSTER) {
+        if (cluster == README_CLUSTER) {
             text_sector(readme, offset, buf);
-        } else if (cluster == STATUS_CLUSTER) {
-            text_sector(status, offset, buf);
-        } else if (cluster == LOG_CLUSTER) {
+        } else if (cluster == AUTORUN_CLUSTER) {
+            text_sector(autorun, offset, buf);
+#ifdef VDISK_DEBUG
+        } else if (cluster == DEBUG_CLUSTER) {
             log_sector(offset, buf);
+#endif
 #ifdef VDISK_WEB_TOOL
         } else if (cluster < JSON_CLUSTER) {
             uint32_t pos = (cluster - TOOL_CLUSTER) * CLUSTER + offset;
@@ -861,8 +877,8 @@ static bool looks_like_json(const uint8_t* buf) {
     return false;
 }
 
-static void set_status(const char* prefix, const char* text) {
-    snprintf(status, sizeof(status), "%s%s\r\n", prefix, text);
+static void apply_failed(const char* text) {
+    vdisk_log("vdisk: configuration not loaded: %s", text);
     changed = true;
 }
 
@@ -880,7 +896,7 @@ static void check_dropped() {
         if (im.state == DONE) {
             apply_pending = true;
         } else if (im.state == FAILED) {
-            set_status("ERROR: ", im.error);
+            apply_failed(im.error);
             im = import_t();
         }
         return;
@@ -889,24 +905,27 @@ static void check_dropped() {
 
 static void write_sector(uint32_t lba, const uint8_t* buf) {
     last_write = get_time();
-    if (lba < DATA_LBA) {
+    if (lba < ROOT_LBA) {
         return;
     }
-    uint32_t cluster = 2 + (lba - DATA_LBA) / SECTORS_PER_CLUSTER;
-    bool cluster_start = ((lba - DATA_LBA) % SECTORS_PER_CLUSTER) == 0;
-
-    if (cluster == APPLY_CLUSTER) {
+    if (lba < DATA_LBA) {
         for (const uint8_t* e = buf; e < buf + SECTOR; e += 32) {
             uint16_t first = e[26] | (e[27] << 8);
             uint32_t size;
             memcpy(&size, e + 28, 4);
-            if ((e[0] == 0) || (e[0] == 0xE5) || (e[11] & 0x18) || (first < 2) || (size == 0)) {
+            if ((e[0] == 0) || (e[0] == 0xE5) || (e[11] & 0x18) || (first < 2) || (size == 0) ||
+                (memcmp(e + 8, "JSO", 3) != 0)) {
                 continue;
+            }
+            if ((first == JSON_CLUSTER) && (size == json_size) && (im.cluster != JSON_CLUSTER)) {
+                continue;  // our own config.json, unchanged
             }
             dropped[dropped_next] = { first, size };
             dropped_next = (dropped_next + 1) % (sizeof(dropped) / sizeof(dropped[0]));
         }
     } else {
+        uint32_t cluster = 2 + (lba - DATA_LBA) / SECTORS_PER_CLUSTER;
+        bool cluster_start = ((lba - DATA_LBA) % SECTORS_PER_CLUSTER) == 0;
         bool next = (im.state == PARSING) && (lba == im.next_lba);
         if (!next && cluster_start && !apply_pending && looks_like_json(buf)) {
             im = import_t();
@@ -968,8 +987,7 @@ static void apply() {
     reset_state();
     config_updated = true;
     need_to_persist_config = true;
-    set_status("OK: ", "configuration loaded and saved.");
-    vdisk_log("vdisk: configuration from APPLY loaded and saved");
+    vdisk_log("vdisk: configuration loaded and saved");
 }
 
 void vdisk_task() {
@@ -985,7 +1003,7 @@ void vdisk_task() {
         return;
     }
     if (!changed && (dropped[0].cluster != 0)) {
-        set_status("ERROR: ", (im.state == FAILED) ? im.error : "file is not a configuration");
+        apply_failed((im.state == FAILED) ? im.error : "file is not a configuration");
     }
     // make the host read the drive again
     if (changed) {

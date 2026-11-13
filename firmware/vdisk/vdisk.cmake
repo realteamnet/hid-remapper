@@ -6,6 +6,9 @@ endif()
 if(NOT DEFINED VDISK_WEB_TOOL)
     set(VDISK_WEB_TOOL ON)
 endif()
+if(NOT DEFINED VDISK_DEBUG)
+    set(VDISK_DEBUG OFF)
+endif()
 
 if(VDISK_ENABLE)
     # vdisk.cc reads and writes the config format; stop the build if upstream changes it
@@ -32,6 +35,9 @@ if(VDISK_ENABLE)
         CFG_TUD_MSC=1
         CFG_TUD_MSC_EP_BUFSIZE=512
     )
+    if(VDISK_DEBUG)
+        target_compile_definitions(remapper PRIVATE VDISK_DEBUG)
+    endif()
 
     if(VDISK_WEB_TOOL)
         set(VDISK_TOOL_SRC ${CMAKE_CURRENT_LIST_DIR}/../../config-tool-web)

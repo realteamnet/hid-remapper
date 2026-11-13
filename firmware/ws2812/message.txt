@@ -1,8 +1,24 @@
-CLAUDE- hidout: K400r Fn lock confirmed on hardware (README)
+CLAUDE-Config drive: apply any root .json, config.html, layers 4-7 in web tool
 
-The receiver confirms both settings through the remapper (11 01 0F 1A
-00|01 01 ...); while the keyboard sleeps it answers HID++ error 09 and
-the 5 s resend gets through once it wakes.
+vdisk:
+- APPLY folder and STATUS.TXT removed. Any .json copied to the drive root
+  (any name, or over config.json) is parsed; a valid config is loaded and
+  saved, an invalid one is ignored and the running config is kept.
+- LOG.TXT renamed DEBUG.TXT and only built with -DVDISK_DEBUG=ON (default
+  OFF; vdisk_log is compiled out).
+- WEBTOOL.HTM renamed config.html, README.TXT renamed readme.txt.
+- Hidden system autorun.inf with label=HID-REMAPPER.
+- webtool.cmake: unhide layer checkboxes 4-7 (mapping rows and unmapped
+  passthrough), widen the layer column and keep the layer and S/T/H rows on
+  one line. Regex patches on the drive's copy only; index.html untouched.
+
+hidout:
+- Table lines are numbers-only lines in any expression; HIDOUT_TABLE removed.
+- K400 example in a single expression, K400 Plus lines commented out.
+
+ws2812 example:
+- Ctrl+Alt+F1-F8 are no longer blocked from the PC: 8 pass-through
+  registers and 16 mappings removed.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd
