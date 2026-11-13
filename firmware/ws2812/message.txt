@@ -1,4 +1,4 @@
-CLAUDE-build.yml: document the runner guard
+CLAUDE-vdisk README: expression colours
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd
