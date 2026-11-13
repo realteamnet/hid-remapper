@@ -1,21 +1,4 @@
-CLAUDE-Build on the owner's WSL runner with GitHub fallback; expression colours
-
-CI:
-- build.yml (new, on push/workflow_dispatch): builds on the self-hosted
-  runner labelled wsl-build; a watch job falls back to a GitHub-hosted
-  build if that job fails or hasn't started within 3 minutes (20 s once
-  the runner is known to be offline, state kept in the Actions cache).
-- build-rp2040.yml: reusable only (runner/max_wait inputs); upstream's build
-  steps unchanged; a gate step skips a self-hosted job that starts after
-  the fallback took over; apt and actions/cache only on GitHub runners;
-  MAKEFLAGS -j$(nproc).
-
-vdisk: config.html colours the expression boxes like an IDE (comments,
-register numbers, values, hex, store/recall, logic, maths, inputs, stack,
-debug, colour names, unknown words) via highlight.js, inlined by
-webtool.cmake; the boxes grow to fit their text.
-
-hidout README: reconnect resend confirmed on a K400r.
+CLAUDE-build.yml: document the runner guard
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd

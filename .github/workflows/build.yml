@@ -6,6 +6,9 @@ name: build
 #   20 seconds, until a run sees the runner again.
 # - A self-hosted job that starts after the wait skips itself (build-rp2040.yml max_wait),
 #   so a runner coming back online never publishes an older build over the fallback's.
+# - The runner itself refuses any job that isn't a push, manual run or schedule by the
+#   owner on this repository (job-start hook set up by the owner's wsl-setup.sh), so pull
+#   requests and forks can never run on it. This workflow has no pull_request trigger.
 on:
   push:
     branches:
