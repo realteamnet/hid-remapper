@@ -1,0 +1,23 @@
+CLAUDE-real-team folder, RP2040-Zero board, LED boot colour
+
+- Modules moved to firmware/real-team/{ws2812,vdisk,hidout} (git mv).
+  real-team.cmake includes them; real_team.h/.cc are the only functions
+  upstream calls (real_team_task, real_team_report_received,
+  real_team_configuration_descriptor), all gated by REAL_TEAM_ENABLED.
+  CMakeLists.txt now has one include line; main.cc one include and one
+  call (vdisk_task moved to the end of the main loop with the others).
+- src/boards/waveshare_rp2040_zero.h (new, replaces the SDK header):
+  USB host GP0/1, UART0 on GP12/13, WS2812 GP16, valid GPIOs 2-11, 14,
+  15, 17-29. build-rp2040.yml builds it in a separate step and publishes
+  remapper_waveshare_rp2040_zero.uf2.
+- ws2812: boot colour 0x200000FF on the board LED (boards whose header has
+  PICO_DEFAULT_WS2812_PIN) until the config writes register 31 or 32;
+  WS2812_BOOT_SETTINGS / WS2812_BOOT_COLOR to change or turn it off.
+- READMEs: real-team/README.md lists every upstream edit; module READMEs
+  point to it.
+
+Tested locally: pico, waveshare_rp2040_zero, feather_host and pico with all
+modules off build.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd

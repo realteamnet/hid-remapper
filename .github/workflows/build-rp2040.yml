@@ -145,6 +145,19 @@ jobs:
           mv build-meisterconverter/remapper.uf2 artifacts/remapper_meisterconverter.uf2
           mv build-rp2040abb/remapper.uf2 artifacts/remapper_rp2040abb.uf2
         working-directory: ./firmware
+      # boards this fork adds (board headers in src/boards); upstream's build step above is unchanged
+      - name: Build fork boards
+        if: steps.gate.outputs.go == 'true'
+        run: |
+          for board in waveshare_rp2040_zero; do
+            mkdir build-$board
+            cd build-$board
+            PICO_BOARD=$board cmake ..
+            make remapper
+            cd ..
+            mv build-$board/remapper.uf2 artifacts/remapper_$board.uf2
+          done
+        working-directory: ./firmware
       - uses: actions/upload-artifact@v7
         if: steps.gate.outputs.go == 'true'
         with:

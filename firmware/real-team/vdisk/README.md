@@ -5,7 +5,7 @@ Adds a small USB flash drive to HID Remapper (the `remapper` target, RP2040 and 
 | On the drive | What it is |
 | --- | --- |
 | `config.json` | The current configuration, in the same JSON format as the web config tool. It is generated from the live configuration when it is read. Copy it off to make a backup. |
-| `config.html` | The web config tool as one self-contained file. Open it in Chrome or Edge; it needs no internet connection. Its Examples list starts with the RGB LED demo (`firmware/ws2812/ws2812_example.json`) and the Logitech K400 Fn lock example (`firmware/hidout/hidout_example.json`), each only when its module (`ws2812`, `hidout`) is in the build. |
+| `config.html` | The web config tool as one self-contained file. Open it in Chrome or Edge; it needs no internet connection. Its Examples list starts with the RGB LED demo (`firmware/real-team/ws2812/ws2812_example.json`) and the Logitech K400 Fn lock example (`firmware/real-team/hidout/hidout_example.json`), each only when its module (`ws2812`, `hidout`) is in the build. |
 | `DEBUG.TXT` | Debug builds only (`-DVDISK_DEBUG=ON`). Debug log, the last 4 KB (e.g. from the `hidout` module). Always exactly 4096 bytes (blank-padded), so the drive never remounts for it; read it uncached (e.g. `FILE_FLAG_NO_BUFFERING`) to see new lines, because a normal read may return Windows' cached copy. |
 | `autorun.inf` | Hidden, system, read-only. Only `label=HID-REMAPPER`, so Windows shows the drive as HID-REMAPPER (the FAT volume label, `HIDREMAPPER`, is limited to 11 characters). It starts nothing. |
 | `readme.txt` | A short description of the above. |
@@ -44,12 +44,9 @@ The build stops with an error if `src/config.cc` has a different `CONFIG_VERSION
 
 ## Changes to hid-remapper's own files
 
-| File | Change |
-| --- | --- |
-| `firmware/CMakeLists.txt` | `include(vdisk/vdisk.cmake OPTIONAL)` after the `remapper` target. |
-| `firmware/src/tusb_config_both/tusb_config.h` | `#ifndef` around `#define CFG_TUD_MSC 0`, so the build can set it to 1. |
-| `firmware/src/tinyusb_stuff.cc` | Inside `#ifdef VDISK_ENABLED`: the include, and `tud_descriptor_configuration_cb()` returns `vdisk_configuration_descriptor(...)`. |
-| `firmware/src/main.cc` | Inside `#ifdef VDISK_ENABLED`: the include, and `vdisk_task()` after `tud_task()`. |
+None of its own. This module is pulled in by `firmware/real-team/real-team.cmake` and called from `real_team.cc`; the upstream edits for all real-team modules are listed in [`firmware/real-team/README.md`](../README.md).
+
+The ones made for this module: `#ifndef` around `CFG_TUD_MSC` in `src/tusb_config_both/tusb_config.h` (so `vdisk.cmake` can turn on USB mass storage), and `tud_descriptor_configuration_cb()` in `src/tinyusb_stuff.cc` returning `real_team_configuration_descriptor()`, which appends the drive's interface. `vdisk_task()` runs from `real_team_task()` at the end of the main loop.
 
 ## How it works
 

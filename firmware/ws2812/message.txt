@@ -1,9 +1,0 @@
-CLAUDE-config.html: only list examples of modules in the build
-
-vdisk.cmake passes the RGB LED demo / K400 Fn lock example to webtool.cmake
-only when WS2812_ENABLED / HIDOUT_ENABLED is on the remapper target (generator
-expression, so module include order does not matter). The K400 example no
-longer says "needs the hidout module". Tested: both on, hidout off, ws2812 off.
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd

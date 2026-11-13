@@ -110,11 +110,9 @@ Expression 2, the table:
 
 ## Changes to hid-remapper's own files
 
-| File | Change |
-| --- | --- |
-| `firmware/CMakeLists.txt` | `include(hidout/hidout.cmake OPTIONAL)` |
-| `firmware/src/main.cc` | Inside `#ifdef HIDOUT_ENABLED`: the include, and `hidout_task()` at the end of the main loop. |
-| `firmware/src/remapper_single.cc` | Inside `#ifdef HIDOUT_ENABLED`: the include, and `hidout_report_received()` at the start of `report_received_callback()`, so replies from a device can be logged. |
+None of its own. This module is pulled in by `firmware/real-team/real-team.cmake` and called from `real_team.cc`; the upstream edits for all real-team modules are listed in [`firmware/real-team/README.md`](../README.md).
+
+The one made for this module: `report_received_callback()` in `src/remapper_single.cc` calls `real_team_report_received()`, which passes every input report to `hidout_report_received()` (watch lines and reply logging). `hidout_task()` runs from `real_team_task()`.
 
 ## How it works
 

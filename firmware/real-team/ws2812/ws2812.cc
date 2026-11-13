@@ -34,6 +34,7 @@ static uint8_t brightness;
 
 static uint32_t prev_settings = 0;
 static uint32_t prev_color = 0;
+static bool config_seen = false;
 
 static bool pin_ok(uint p) {
     return (p < NUM_BANK0_GPIOS) &&
@@ -77,7 +78,7 @@ static void stop() {
     active = false;
 }
 
-static void configure(uint32_t settings) {
+static void configure(uint32_t settings, uint32_t color) {
     uint new_pin = settings & 0xFF;
     uint new_power_pin = NO_PIN;
     if (settings >> 24) {
@@ -136,18 +137,24 @@ static void configure(uint32_t settings) {
     order[1] = b;
     order[2] = c;
     brightness = brightness_levels[(settings >> 20) & 0x0F];
-    show(registers[WS2812_COLOR_REGISTER - 1]);
+    show(color);
 }
 
 void ws2812_led_task() {
     uint32_t settings = registers[WS2812_SETTINGS_REGISTER - 1];
-    if (settings != prev_settings) {
-        configure(settings);
-    }
-    if (active) {
-        uint32_t color = registers[WS2812_COLOR_REGISTER - 1];
-        if (color != prev_color) {
-            show(color);
+    uint32_t color = registers[WS2812_COLOR_REGISTER - 1];
+    if (!config_seen) {
+        if (settings || color) {
+            config_seen = true;
+        } else {
+            settings = WS2812_BOOT_SETTINGS;
+            color = WS2812_BOOT_COLOR;
         }
+    }
+    if (settings != prev_settings) {
+        configure(settings, color);
+    }
+    if (active && (color != prev_color)) {
+        show(color);
     }
 }

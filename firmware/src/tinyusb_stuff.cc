@@ -31,8 +31,8 @@
 #include "our_descriptor.h"
 #include "platform.h"
 #include "remapper.h"
-#ifdef VDISK_ENABLED
-#include "vdisk.h"
+#ifdef REAL_TEAM_ENABLED
+#include "real_team.h"
 #endif
 
 // These IDs are bogus. If you want to distribute any hardware using this,
@@ -130,8 +130,8 @@ uint8_t const* tud_descriptor_device_cb() {
 // Application return pointer to descriptor
 // Descriptor contents must exist long enough for transfer to complete
 uint8_t const* tud_descriptor_configuration_cb(uint8_t index) {
-#ifdef VDISK_ENABLED
-    return vdisk_configuration_descriptor(configuration_descriptors[our_descriptor->idx]);
+#ifdef REAL_TEAM_ENABLED
+    return real_team_configuration_descriptor(configuration_descriptors[our_descriptor->idx]);
 #endif
     return configuration_descriptors[our_descriptor->idx];
 }

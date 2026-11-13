@@ -28,14 +28,8 @@
 #include "platform.h"
 #include "remapper.h"
 #include "tick.h"
-#ifdef WS2812_ENABLED
-#include "ws2812.h"
-#endif
-#ifdef VDISK_ENABLED
-#include "vdisk.h"
-#endif
-#ifdef HIDOUT_ENABLED
-#include "hidout.h"
+#ifdef REAL_TEAM_ENABLED
+#include "real_team.h"
 #endif
 
 // RP2350 UF2s wipe the last sector of flash every time
@@ -295,9 +289,6 @@ int main() {
 #endif
         }
         tud_task();
-#ifdef VDISK_ENABLED
-        vdisk_task();
-#endif
         if (boot_protocol_updated) {
             parse_our_descriptor();
             boot_protocol_updated = false;
@@ -333,11 +324,8 @@ int main() {
         print_stats_maybe();
 
         activity_led_off_maybe();
-#ifdef WS2812_ENABLED
-        ws2812_led_task();
-#endif
-#ifdef HIDOUT_ENABLED
-        hidout_task();
+#ifdef REAL_TEAM_ENABLED
+        real_team_task();
 #endif
     }
 

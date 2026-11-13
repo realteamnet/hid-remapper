@@ -19,4 +19,9 @@ if(WS2812_ENABLE)
         WS2812_SETTINGS_REGISTER=${WS2812_SETTINGS_REGISTER}
         WS2812_COLOR_REGISTER=${WS2812_COLOR_REGISTER}
     )
+    foreach(setting WS2812_BOOT_SETTINGS WS2812_BOOT_COLOR)
+        if(DEFINED ${setting})
+            target_compile_definitions(remapper PRIVATE ${setting}=${${setting}})
+        endif()
+    endforeach()
 endif()

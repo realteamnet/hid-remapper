@@ -7,14 +7,18 @@ LEDs: WS2812, WS2812B, SK6812 (RGB) and Adafruit NeoPixels.
 
 - **Any board.** The module is built into the `remapper` target on every board.
   The config can name any GPIO, or ask for the board's own LED.
-- **Dormant by default.** Until the config writes the settings register, no LED
-  code runs: no PIO state machine is claimed and no pin is touched. A board
-  without the LED configured behaves exactly like stock hid-remapper.
+- **Boot colour.** On a board whose header names its LED pin
+  (`PICO_DEFAULT_WS2812_PIN`: `waveshare_rp2040_zero`, `feather_host`,
+  `waveshare_rp2350_usb_a`), the board LED shows `0x200000FF` (dim blue) from
+  power-on until the config writes the settings or colour register; then the
+  config takes over. On other boards no LED code runs and no pin is touched
+  until the config writes the settings register. `WS2812_BOOT_SETTINGS` and
+  `WS2812_BOOT_COLOR` change this (see "Build settings").
 - **Nothing hardcoded.** The firmware has no colours, animations or layer
   logic. The config says which LED to use and what colour to show, using
   two expression registers.
 
-Everything lives in this folder so it can later become a git submodule.
+This folder is part of `firmware/real-team/` (see its README).
 
 ## Quick start
 
@@ -35,7 +39,8 @@ without knowing the pin (see "Boards" below).
 
 | hid-remapper build (`PICO_BOARD`) | LED | Settings to use |
 | --- | --- | --- |
-| `pico` on a Waveshare RP2040-Zero (or clone) | WS2812 on GPIO16 | `0x00000010` (GRB). Some clones are RGB: `0x00012310`. |
+| `waveshare_rp2040_zero` (Waveshare RP2040-Zero, board header added by this fork) | WS2812 on GPIO16 | `0x000000FF` (GRB). Some clones are RGB: `0x000123FF`. Shows the boot colour. |
+| `pico` on a Waveshare RP2040-Zero (or clone) | WS2812 on GPIO16 | `0x00000010` (GRB). Some clones are RGB: `0x00012310`. No boot colour (the `pico` header names no LED); use `waveshare_rp2040_zero` instead. |
 | `pico2` on a Waveshare RP2350-Zero | WS2812 on GPIO16 | `0x00000010`; try `0x00012310` if red and green are swapped. |
 | `feather_host` (Adafruit Feather RP2040 with USB Type A Host) | NeoPixel on GPIO21 | `0x000000FF`. If it stays dark, the NeoPixel may need its power pin switched on: `0x940000FF` (GPIO20). |
 | `waveshare_rp2350_usb_a` (Waveshare RP2350-USB-A) | WS2812 on GPIO16 | `0x000000FF`; `0x000123FF` if red and green are swapped. |
@@ -60,7 +65,8 @@ without knowing the pin (see "Boards" below).
 | `L` | Master brightness, `1` (dimmest) to `F` (full); `0` = full. |
 | `WW` | LED power pin: `00` = none. `80` + the GPIO number = that GPIO is driven high while the LED is in use, for boards that switch the LED's power (`94` = GPIO20). With `PP` = `FF` and `WW` = `00`, the board's `PICO_DEFAULT_WS2812_POWER_PIN` is used if it has one. |
 
-- `0` (the power-on value) means **no LED**: nothing is claimed or touched.
+- `0` means **no LED**: nothing is claimed or touched (before the config first
+  writes register 31 or 32, the boot settings are used instead).
 - An invalid value also means no LED: a pin that doesn't exist, one of the
   PIO-USB host port pins (or its VBUS-enable pin), `FF` on a board without an
   LED of its own, a power pin equal to the data pin, `WW` without bit 7 set, or
@@ -124,7 +130,7 @@ hardware yet.
 | `ws2812.pio` | PIO program, converted line by line from the MicroPython `@rp2.asm_pio` sample, plus `ws2812_program_init()`. |
 | `ws2812.h` | Compile-time settings and `ws2812_led_task()`. |
 | `ws2812.cc` | Driver: follows registers 31 and 32. |
-| `ws2812.cmake` | All build logic; pulled in by one line in `firmware/CMakeLists.txt`. |
+| `ws2812.cmake` | All build logic; included by `firmware/real-team/real-team.cmake`. |
 | `ws2812_example.json` | Example config, described below. |
 
 ## Build settings
@@ -136,6 +142,8 @@ CMake variables (`-D...`, or set before the include):
 | `WS2812_ENABLE` | `ON` | `OFF` leaves the module out of the build. |
 | `WS2812_SETTINGS_REGISTER` | `31` | Expression register (1-32) holding the settings. |
 | `WS2812_COLOR_REGISTER` | `32` | Expression register (1-32) holding the colour. |
+| `WS2812_BOOT_SETTINGS` | `0x000000FF` if the board header has `PICO_DEFAULT_WS2812_PIN`, else `0` | Settings used from power-on until the config writes register 31 or 32. `0` = LED off until then. |
+| `WS2812_BOOT_COLOR` | `0x200000FF` | Colour shown with the boot settings (dim blue; blue is the last byte in both GRB and RGB order). |
 
 A project that needs registers 31/32 for something else can move them, e.g.
 `cmake -DWS2812_SETTINGS_REGISTER=7 -DWS2812_COLOR_REGISTER=8 ..`. Configs must
@@ -271,43 +279,9 @@ ticked); in that case add Scroll Lock → Nothing on layer 7.
 
 ## Changes to hid-remapper's own files
 
-With `WS2812_ENABLE=OFF`, or without this folder, the build is exactly
-upstream.
+None of its own. This module is pulled in by `firmware/real-team/real-team.cmake` and called from `real_team.cc`; the upstream edits for all real-team modules are listed in [`firmware/real-team/README.md`](../README.md).
 
-### 1. `firmware/CMakeLists.txt`: one line
-
-After the `target_link_libraries(remapper ...)` block:
-
-```cmake
-include(ws2812/ws2812.cmake OPTIONAL)
-```
-
-The included file adds the driver source, the generated `ws2812.pio.h`, the
-include directory and the `WS2812_ENABLED` define to the `remapper` target.
-
-### 2. `firmware/src/main.cc`: two guarded blocks
-
-```c
-#include "tick.h"
-#ifdef WS2812_ENABLED
-#include "ws2812.h"
-#endif
-...
-        activity_led_off_maybe();
-#ifdef WS2812_ENABLED
-        ws2812_led_task();
-#endif
-```
-
-There is no init call: the driver sets itself up from `ws2812_led_task()` when
-the settings register is first written, which is always after `tusb_init()` and
-`stdio_init_all()`.
-
-### 3. `config-tool-web/code.js`: colour names
-
-A `led_colors` table and `led_color_to_hex()` next to the `ops` table, and four
-lines in `expression_onchange()` that try a colour name before reporting an
-invalid expression. Optional; the firmware doesn't depend on it.
+The driver has no init call: it sets itself up from `ws2812_led_task()` (called by `real_team_task()` at the end of the main loop), which is always after `tusb_init()` and `stdio_init_all()`. The colour names in the web tool are the `config-tool-web/code.js` edit listed there.
 
 ## How it works
 
@@ -330,7 +304,7 @@ invalid expression. Optional; the firmware doesn't depend on it.
 
 ## Resource use
 
-- Dormant: one register read and compare per main-loop iteration.
+- Idle (no LED in use): two register reads and a compare per main-loop iteration.
 - Active: one PIO state machine and 4 instruction slots on whichever PIO block
   has room (`pio_claim_free_sm_and_add_program_for_gpio_range()`; Pico-PIO-USB
   uses pio0/sm0 and pio1/sm0+sm1). No DMA, no IRQ.
