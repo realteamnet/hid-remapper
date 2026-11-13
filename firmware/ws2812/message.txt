@@ -1,6 +1,7 @@
-CLAUDE-Config drive: joy.cpl icon in autorun.inf
+CLAUDE-Web tool: fit 8 layers without horizontal scroll
 
-autorun.inf gets icon=%SystemRoot%\System32\joy.cpl,0 (Game Controllers icon).
+webtool.cmake: page max-width 720 -> 900 px, gx-2 column gaps in the
+mapping header and rows; drop the 1080 px table min-width.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd
