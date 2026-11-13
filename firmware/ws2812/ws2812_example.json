@@ -131,6 +131,326 @@
             "scaling": 1000,
             "source_port": 0,
             "target_port": 0
+        },
+        {
+            "source_usage": "0x0007003a",
+            "target_usage": "0x00000000",
+            "layers": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+            ],
+            "sticky": false,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0xfff5000c",
+            "target_usage": "0x0007003a",
+            "layers": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+            ],
+            "sticky": false,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0x0007003b",
+            "target_usage": "0x00000000",
+            "layers": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+            ],
+            "sticky": false,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0xfff5000d",
+            "target_usage": "0x0007003b",
+            "layers": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+            ],
+            "sticky": false,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0x0007003c",
+            "target_usage": "0x00000000",
+            "layers": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+            ],
+            "sticky": false,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0xfff5000e",
+            "target_usage": "0x0007003c",
+            "layers": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+            ],
+            "sticky": false,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0x0007003d",
+            "target_usage": "0x00000000",
+            "layers": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+            ],
+            "sticky": false,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0xfff5000f",
+            "target_usage": "0x0007003d",
+            "layers": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+            ],
+            "sticky": false,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0x0007003e",
+            "target_usage": "0x00000000",
+            "layers": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+            ],
+            "sticky": false,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0xfff50011",
+            "target_usage": "0x0007003e",
+            "layers": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+            ],
+            "sticky": false,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0x0007003f",
+            "target_usage": "0x00000000",
+            "layers": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+            ],
+            "sticky": false,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0xfff50015",
+            "target_usage": "0x0007003f",
+            "layers": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+            ],
+            "sticky": false,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0x00070040",
+            "target_usage": "0x00000000",
+            "layers": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+            ],
+            "sticky": false,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0xfff50017",
+            "target_usage": "0x00070040",
+            "layers": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+            ],
+            "sticky": false,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0x00070041",
+            "target_usage": "0x00000000",
+            "layers": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+            ],
+            "sticky": false,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0xfff50018",
+            "target_usage": "0x00070041",
+            "layers": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+            ],
+            "sticky": false,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
         }
     ],
     "macros": [
@@ -168,11 +488,11 @@
         []
     ],
     "expressions": [
-        "/* LED on GPIO16, RGB order */ eol 0x00012310 31000 store eol /* power-on color, and how many seconds it shows */ eol 0x20FFFFFF 8000 store 2000 7000 store eol /* Win+Ctrl+F1-F12 pick the mode */ eol 0x0007003a input_state_binary eol 0x0007003b input_state_binary 2000 mul add eol 0x0007003c input_state_binary 3000 mul add eol 0x0007003d input_state_binary 4000 mul add eol 0x0007003e input_state_binary 5000 mul add eol 0x0007003f input_state_binary 6000 mul add eol 0x00070040 input_state_binary 7000 mul add eol 0x00070041 input_state_binary 8000 mul add eol 0x00070042 input_state_binary 9000 mul add eol 0x00070043 input_state_binary 10000 mul add eol 0x00070044 input_state_binary 11000 mul add eol 0x00070045 input_state_binary 12000 mul add eol 0x000700e0 input_state_binary 0x000700e4 input_state_binary bitwise_or mul /* either Ctrl */ eol 0x000700e3 input_state_binary 0x000700e7 input_state_binary bitwise_or mul /* either Win */ eol 17000 store eol 17000 recall dup 20000 recall dup not 2000 mul add ifte 20000 store eol /* F1: full brightness, F2: low brightness */ eol 17000 recall 1000 eq 0xFF000000 17000 recall 2000 eq 0x20000000 19000 recall dup not 0x20000000 mul add ifte ifte 19000 store eol /* keys 1-9 and 0 */ eol 0x0007001e input_state_binary eol 0x0007001f input_state_binary 2000 mul add eol 0x00070020 input_state_binary 3000 mul add eol 0x00070021 input_state_binary 4000 mul add eol 0x00070022 input_state_binary 5000 mul add eol 0x00070023 input_state_binary 6000 mul add eol 0x00070024 input_state_binary 7000 mul add eol 0x00070025 input_state_binary 8000 mul add eol 0x00070026 input_state_binary 9000 mul add eol 0x00070027 input_state_binary 10000 mul add eol 18000 store eol /* a layer change picks color 1-8 */ eol layer_state 30000 recall eq 28000 recall eol layer_state 0x01 eq eol layer_state 0x02 eq 2000 mul add eol layer_state 0x04 eq 3000 mul add eol layer_state 0x08 eq 4000 mul add eol layer_state 0x10 eq 5000 mul add eol layer_state 0x20 eq 6000 mul add eol layer_state 0x40 eq 7000 mul add eol layer_state 0x80 eq 8000 mul add eol ifte 28000 store eol layer_state 30000 store eol /* modes 1 and 2: keys 1-9 pick a color, 0 is off */ eol 18000 recall 20000 recall 3000 lt mul 18000 recall 28000 recall ifte 28000 store",
-        "/* mode 4: keys 1-5 start an animation, 0 stops it */ eol 18000 recall 20000 recall 4000 eq mul 13000 store eol 13000 recall 13000 recall 29000 recall eq not mul time_sec 25000 recall ifte 25000 store eol 13000 recall 13000 recall 29000 recall ifte 29000 store eol time_sec 25000 recall sub 23000 store 23000 recall 1000 mod 360000 mul 24000 store eol /* 1: red strobe 10 Hz */ 29000 recall 1000 eq 23000 recall 100 mod 50 lt 0x40FF0000 0 ifte eol /* 2: green blink 2 Hz */ 29000 recall 2000 eq 23000 recall 500 mod 250 lt 0xFF00FF00 0 ifte eol /* 3: police red/blue 4 Hz */ 29000 recall 3000 eq 23000 recall 250 mod 125 lt 0xFFFF0000 0xFF0000FF ifte eol /* 4: blue breathing, 2 s per breath */ 29000 recall 4000 eq 23000 recall 2000 mod 180000 mul sin 1000 add 127000 mul 1000 add round 0x1000000 mul 0x000000FF add eol /* 5: rainbow, 1 cycle/s */ 29000 recall 5000 eq 24000 recall sin 1000 add 127500 mul round 0x10000 mul 24000 recall 120000 add sin 1000 add 127500 mul round 0x100 mul 24000 recall 240000 add sin 1000 add 127500 mul round 0x1 mul add add 0x60000000 add eol 0 ifte ifte ifte ifte ifte 27000 store",
-        "/* mode 3: show the hub ports in use, 0.6 s each (port 1 = color 1) */ eol 1000 port plugged_in 2000 port plugged_in add 3000 port plugged_in add 4000 port plugged_in add 5000 port plugged_in add 6000 port plugged_in add 7000 port plugged_in add 8000 port plugged_in add 1000 max 15000 store eol time_sec 504000 mod 600 div 500 sub round 15000 recall mod 12000 store 0 14000 store 0 26000 store eol 1000 port plugged_in 14000 recall 12000 recall eq mul 1000 26000 recall ifte 26000 store 14000 recall plugged_in add 14000 store eol 2000 port plugged_in 14000 recall 12000 recall eq mul 2000 26000 recall ifte 26000 store 14000 recall plugged_in add 14000 store eol 3000 port plugged_in 14000 recall 12000 recall eq mul 3000 26000 recall ifte 26000 store 14000 recall plugged_in add 14000 store eol 4000 port plugged_in 14000 recall 12000 recall eq mul 4000 26000 recall ifte 26000 store 14000 recall plugged_in add 14000 store eol 5000 port plugged_in 14000 recall 12000 recall eq mul 5000 26000 recall ifte 26000 store 14000 recall plugged_in add 14000 store eol 6000 port plugged_in 14000 recall 12000 recall eq mul 6000 26000 recall ifte 26000 store 14000 recall plugged_in add 14000 store eol 7000 port plugged_in 14000 recall 12000 recall eq mul 7000 26000 recall ifte 26000 store 14000 recall plugged_in add 14000 store eol 8000 port plugged_in 14000 recall 12000 recall eq mul 8000 26000 recall ifte 26000 store 14000 recall plugged_in add 14000 store eol 0 port",
-        "/* mode 5: gamepad buttons 1-13, the highest one held wins */ eol 0 eol 0x00090001 input_state_binary swap 1000 swap ifte eol 0x00090002 input_state_binary swap 2000 swap ifte eol 0x00090003 input_state_binary swap 3000 swap ifte eol 0x00090004 input_state_binary swap 4000 swap ifte eol 0x00090005 input_state_binary swap 5000 swap ifte eol 0x00090006 input_state_binary swap 6000 swap ifte eol 0x00090007 input_state_binary swap 7000 swap ifte eol 0x00090008 input_state_binary swap 8000 swap ifte eol 0x00090009 input_state_binary swap 9000 swap ifte eol 0x0009000a input_state_binary swap 11000 swap ifte eol 0x0009000b input_state_binary swap 12000 swap ifte eol 0x0009000c input_state_binary swap 13000 swap ifte eol 0x0009000d input_state_binary swap 14000 swap ifte eol 16000 store eol /* sticks: direction is the hue, deflection is the brightness */ eol 0x00010030 input_state_scaled 0x00010032 input_state_scaled add 256000 sub 11000 store eol 0x00010031 input_state_scaled 0x00010035 input_state_scaled add 256000 sub 10000 store eol 10000 recall 11000 recall atan2 9000 store eol 11000 recall dup mul 10000 recall dup mul add sqrt dup 20000 gt 11000 recall 10000 recall add -512000 eq not mul swap eol 2000 mul 0 255000 clamp round 0x1000000 mul eol 9000 recall sin 1000 add 127500 mul round 0x10000 mul add 9000 recall 120000 add sin 1000 add 127500 mul round 0x100 mul add 9000 recall 240000 add sin 1000 add 127500 mul round 0x1 mul add eol 0 ifte 22000 store",
-        "/* color index: hub port in mode 3, gamepad button in mode 5, otherwise the picked color */ eol 20000 recall 3000 eq 26000 recall 20000 recall 5000 eq 16000 recall 28000 recall ifte ifte 21000 store eol /* palette */ eol 21000 recall 1000 eq 0x00FFFFFF mul /* 1: white */ eol 21000 recall 2000 eq 0x00FF0000 mul add /* 2: red */ eol 21000 recall 3000 eq 0x00FF2800 mul add /* 3: orange */ eol 21000 recall 4000 eq 0x00FF9000 mul add /* 4: yellow */ eol 21000 recall 5000 eq 0x0000FF00 mul add /* 5: green */ eol 21000 recall 6000 eq 0x0000FFFF mul add /* 6: cyan */ eol 21000 recall 7000 eq 0x000000FF mul add /* 7: blue */ eol 21000 recall 8000 eq 0x00FF00FF mul add /* 8: magenta */ eol 21000 recall 9000 eq 0x00FF0040 mul add /* 9: pink */ eol 21000 recall 11000 eq 0x0080FF00 mul add /* 11: lime */ eol 21000 recall 12000 eq 0x0000FF60 mul add /* 12: teal */ eol 21000 recall 13000 eq 0x008000FF mul add /* 13: purple */ eol 21000 recall 14000 eq 0x00FFC0A0 mul add /* 14: warm white */ eol 19000 recall bitwise_or eol /* sticks when no button is held, animation in mode 4 */ eol 20000 recall 5000 eq 16000 recall not mul swap 22000 recall swap ifte eol 20000 recall 4000 eq 29000 recall 6000 lt mul 29000 recall mul swap 27000 recall swap ifte eol /* power-on color */ eol time_sec 7000 recall lt swap 8000 recall swap ifte eol 32000 store",
+        "/* LED on GPIO16, RGB order */ eol 0x00012310 31000 store eol /* power-on color, and how many seconds it shows */ eol 0x20FFFFFF 8000 store 2000 7000 store eol /* Ctrl+Alt+F1-F8 pick the mode */ eol 0x000700e0 input_state_binary 0x000700e4 input_state_binary bitwise_or /* either Ctrl */ eol 0x000700e2 input_state_binary 0x000700e6 input_state_binary bitwise_or mul 10000 store /* and either Alt */ eol 0x0007003a input_state_binary eol 0x0007003b input_state_binary 2000 mul add eol 0x0007003c input_state_binary 3000 mul add eol 0x0007003d input_state_binary 4000 mul add eol 0x0007003e input_state_binary 5000 mul add eol 0x0007003f input_state_binary 6000 mul add eol 0x00070040 input_state_binary 7000 mul add eol 0x00070041 input_state_binary 8000 mul add eol 10000 recall mul 9000 store eol /* F1-F8 reach the computer through registers, unless Ctrl+Alt is held */ eol 0x0007003a input_state_binary 10000 recall not mul 12000 store eol 0x0007003b input_state_binary 10000 recall not mul 13000 store eol 0x0007003c input_state_binary 10000 recall not mul 14000 store eol 0x0007003d input_state_binary 10000 recall not mul 15000 store eol 0x0007003e input_state_binary 10000 recall not mul 17000 store eol 0x0007003f input_state_binary 10000 recall not mul 21000 store eol 0x00070040 input_state_binary 10000 recall not mul 23000 store eol 0x00070041 input_state_binary 10000 recall not mul 24000 store eol 9000 recall dup 20000 recall dup not 2000 mul add ifte 20000 store eol /* F1: full brightness, F2: low brightness */ eol 9000 recall 1000 eq 0xFF000000 9000 recall 2000 eq 0x20000000 19000 recall dup not 0x20000000 mul add ifte ifte 19000 store eol /* keys 1-9 and 0 */ eol 0x0007001e input_state_binary eol 0x0007001f input_state_binary 2000 mul add eol 0x00070020 input_state_binary 3000 mul add eol 0x00070021 input_state_binary 4000 mul add eol 0x00070022 input_state_binary 5000 mul add eol 0x00070023 input_state_binary 6000 mul add eol 0x00070024 input_state_binary 7000 mul add eol 0x00070025 input_state_binary 8000 mul add eol 0x00070026 input_state_binary 9000 mul add eol 0x00070027 input_state_binary 10000 mul add eol 18000 store eol /* a layer change picks color 1-8 */ eol layer_state 30000 recall eq 28000 recall eol layer_state 0x01 eq eol layer_state 0x02 eq 2000 mul add eol layer_state 0x04 eq 3000 mul add eol layer_state 0x08 eq 4000 mul add eol layer_state 0x10 eq 5000 mul add eol layer_state 0x20 eq 6000 mul add eol layer_state 0x40 eq 7000 mul add eol layer_state 0x80 eq 8000 mul add eol ifte 28000 store eol layer_state 30000 store eol /* modes 1 and 2: keys 1-9 pick a color, 0 is off */ eol 18000 recall 20000 recall 3000 lt mul 18000 recall 28000 recall ifte 28000 store",
+        "/* mode 4: keys 1-5 start an animation, 0 stops it */ eol 18000 recall 20000 recall 4000 eq mul 9000 store eol 9000 recall 9000 recall 29000 recall eq not mul time_sec 25000 recall ifte 25000 store eol 9000 recall 9000 recall 29000 recall ifte 29000 store eol time_sec 25000 recall sub 10000 store 10000 recall 1000 mod 360000 mul 11000 store eol /* 1: red strobe 10 Hz */ 29000 recall 1000 eq 10000 recall 100 mod 50 lt 0x40FF0000 0 ifte eol /* 2: green blink 2 Hz */ 29000 recall 2000 eq 10000 recall 500 mod 250 lt 0xFF00FF00 0 ifte eol /* 3: police red/blue 4 Hz */ 29000 recall 3000 eq 10000 recall 250 mod 125 lt 0xFFFF0000 0xFF0000FF ifte eol /* 4: blue breathing, 2 s per breath */ 29000 recall 4000 eq 10000 recall 2000 mod 180000 mul sin 1000 add 127000 mul 1000 add round 0x1000000 mul 0x000000FF add eol /* 5: rainbow, 1 cycle/s */ 29000 recall 5000 eq 11000 recall sin 1000 add 127500 mul round 0x10000 mul 11000 recall 120000 add sin 1000 add 127500 mul round 0x100 mul 11000 recall 240000 add sin 1000 add 127500 mul round 0x1 mul add add 0x60000000 add eol 0 ifte ifte ifte ifte ifte 27000 store",
+        "/* mode 3: show the hub ports in use, 0.6 s each (port 1 = color 1) */ eol 1000 port plugged_in 2000 port plugged_in add 3000 port plugged_in add 4000 port plugged_in add 5000 port plugged_in add 6000 port plugged_in add 7000 port plugged_in add 8000 port plugged_in add 1000 max 11000 store eol time_sec 504000 mod 600 div 500 sub round 11000 recall mod 9000 store 0 10000 store 0 26000 store eol 1000 port plugged_in 10000 recall 9000 recall eq mul 1000 26000 recall ifte 26000 store 10000 recall plugged_in add 10000 store eol 2000 port plugged_in 10000 recall 9000 recall eq mul 2000 26000 recall ifte 26000 store 10000 recall plugged_in add 10000 store eol 3000 port plugged_in 10000 recall 9000 recall eq mul 3000 26000 recall ifte 26000 store 10000 recall plugged_in add 10000 store eol 4000 port plugged_in 10000 recall 9000 recall eq mul 4000 26000 recall ifte 26000 store 10000 recall plugged_in add 10000 store eol 5000 port plugged_in 10000 recall 9000 recall eq mul 5000 26000 recall ifte 26000 store 10000 recall plugged_in add 10000 store eol 6000 port plugged_in 10000 recall 9000 recall eq mul 6000 26000 recall ifte 26000 store 10000 recall plugged_in add 10000 store eol 7000 port plugged_in 10000 recall 9000 recall eq mul 7000 26000 recall ifte 26000 store 10000 recall plugged_in add 10000 store eol 8000 port plugged_in 10000 recall 9000 recall eq mul 8000 26000 recall ifte 26000 store 10000 recall plugged_in add 10000 store eol 0 port",
+        "/* mode 5: gamepad buttons 1-13, the highest one held wins */ eol 0 eol 0x00090001 input_state_binary swap 1000 swap ifte eol 0x00090002 input_state_binary swap 2000 swap ifte eol 0x00090003 input_state_binary swap 3000 swap ifte eol 0x00090004 input_state_binary swap 4000 swap ifte eol 0x00090005 input_state_binary swap 5000 swap ifte eol 0x00090006 input_state_binary swap 6000 swap ifte eol 0x00090007 input_state_binary swap 7000 swap ifte eol 0x00090008 input_state_binary swap 8000 swap ifte eol 0x00090009 input_state_binary swap 9000 swap ifte eol 0x0009000a input_state_binary swap 11000 swap ifte eol 0x0009000b input_state_binary swap 12000 swap ifte eol 0x0009000c input_state_binary swap 13000 swap ifte eol 0x0009000d input_state_binary swap 14000 swap ifte eol 16000 store eol /* sticks: direction is the hue, deflection is the brightness */ eol 0x00010030 input_state_scaled 0x00010032 input_state_scaled add 256000 sub 9000 store eol 0x00010031 input_state_scaled 0x00010035 input_state_scaled add 256000 sub 10000 store eol 10000 recall 9000 recall atan2 11000 store eol 9000 recall dup mul 10000 recall dup mul add sqrt dup 20000 gt 9000 recall 10000 recall add -512000 eq not mul swap eol 2000 mul 0 255000 clamp round 0x1000000 mul eol 11000 recall sin 1000 add 127500 mul round 0x10000 mul add 11000 recall 120000 add sin 1000 add 127500 mul round 0x100 mul add 11000 recall 240000 add sin 1000 add 127500 mul round 0x1 mul add eol 0 ifte 22000 store",
+        "/* color index: hub port in mode 3, gamepad button in mode 5, otherwise the picked color */ eol 20000 recall 3000 eq 26000 recall 20000 recall 5000 eq 16000 recall 28000 recall ifte ifte 9000 store eol /* palette */ eol 9000 recall 1000 eq 0x00FFFFFF mul /* 1: white */ eol 9000 recall 2000 eq 0x00FF0000 mul add /* 2: red */ eol 9000 recall 3000 eq 0x00FF2800 mul add /* 3: orange */ eol 9000 recall 4000 eq 0x00FF9000 mul add /* 4: yellow */ eol 9000 recall 5000 eq 0x0000FF00 mul add /* 5: green */ eol 9000 recall 6000 eq 0x0000FFFF mul add /* 6: cyan */ eol 9000 recall 7000 eq 0x000000FF mul add /* 7: blue */ eol 9000 recall 8000 eq 0x00FF00FF mul add /* 8: magenta */ eol 9000 recall 9000 eq 0x00FF0040 mul add /* 9: pink */ eol 9000 recall 11000 eq 0x0080FF00 mul add /* 11: lime */ eol 9000 recall 12000 eq 0x0000FF60 mul add /* 12: teal */ eol 9000 recall 13000 eq 0x008000FF mul add /* 13: purple */ eol 9000 recall 14000 eq 0x00FFC0A0 mul add /* 14: warm white */ eol 19000 recall bitwise_or eol /* sticks when no button is held, animation in mode 4 */ eol 20000 recall 5000 eq 16000 recall not mul swap 22000 recall swap ifte eol 20000 recall 4000 eq 29000 recall 6000 lt mul 29000 recall mul swap 27000 recall swap ifte eol /* power-on color */ eol time_sec 7000 recall lt swap 8000 recall swap ifte eol 32000 store",
         "/* Fn lock (Logitech K400, needs the hidout module): register 6 = 1 F-keys first, 2 media keys first */ eol 6000 recall 0 eq 0x1 6000 recall ifte 6000 store eol /* Fn+Esc (reported as Power) toggles it */ eol 0x00070066 input_state_binary 0x00070066 prev_input_state_binary not mul eol 0x3 6000 recall sub 6000 recall ifte 6000 store eol /* HID++ report 10 01 09 19|18 00|01 00 00 to the Unifying receiver 046D:C52B */ eol 6000 recall 0x1 eq 0x10010919 0x10010918 ifte 1000 store eol 6000 recall 0x1 eq 0x00000000 0x01000000 ifte 2000 store eol 0x046DC52B 3000 store",
         "",
         ""

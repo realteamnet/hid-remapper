@@ -170,25 +170,25 @@ it stays:
 
 ### What the keys do
 
-All keys still reach the computer, except Scroll Lock and Power (Fn+Esc on a
-Logitech K400, see "Fn lock" below).
+All keys still reach the computer, except Scroll Lock, Power (Fn+Esc on a
+Logitech K400, see "Fn lock" below) and F1-F8 while Ctrl+Alt is held.
 
-Hold **Win and Ctrl** (either side) and press F1-F12 to pick the mode:
+Hold **Ctrl and Alt** (either side) and press F1-F8 to pick the mode:
 
-| Win+Ctrl+ | Mode | In that mode |
+| Ctrl+Alt+ | Mode | In that mode |
 | --- | --- | --- |
 | F1 | Colour map, full brightness | Keys 1-9 pick a colour, 0 turns the LED off. |
 | F2 | Colour map, low brightness (the power-on mode) | The same, at intensity 0x20. |
 | F3 | Hub ports | Shows which hub ports (1-8) have a device, 0.6 s each, in turn. Port 1 is colour 1, port 2 is colour 2, and so on. |
 | F4 | Animations | Keys 1-5 start an animation, 0 stops it. |
 | F5 | Gamepad | Each button lights its own colour while it is held. With no button held, the sticks set the colour. |
-| F6-F12 | Unused | The LED keeps the picked colour; the number keys do nothing. |
+| F6-F8 | Unused | The LED keeps the picked colour; the number keys do nothing. |
 
-- Plain F1-F12 do not change the mode. The key presses still reach the
-  computer, so the Win+Ctrl+F-key shortcuts of the operating system still
-  happen (on Windows, Win+Ctrl+F4 closes the current virtual desktop).
+- Plain F1-F8 do not change the mode and reach the computer as usual.
+- With Ctrl+Alt held, F1-F8 are **not** sent to the computer; Ctrl and Alt
+  themselves still are. F9-F12 are not used and always pass through.
 - **Brightness.** F1 and F2 also set the brightness used by modes 3 and 5 and
-  by F6-F12.
+  by F6-F8.
 - **Scroll Lock** steps through the 8 layers. Each layer change picks colour
   1-8 (layer 0 = white ... layer 7 = magenta), as a number key would.
 
@@ -235,12 +235,18 @@ nothing. See `firmware/hidout/README.md` for the bytes and caveats.
 (k = 0-6). Each press latches the next layer and releases the current one. On
 layer 7 nothing latches, the release clears it, and layer 0 is back.
 
+**Blocking Ctrl+Alt+F1-F8.** hid-remapper can only block a key per layer, and
+a key that is unmapped on the active colour layer would still pass through. So
+F1-F8 are each mapped to Nothing on every layer, and expression 1 writes
+"F key pressed and Ctrl+Alt not held" into one register per key (12-15, 17,
+21, 23, 24). Mappings Register → F key send them on. This costs no layer.
+
 Every colour source produces a palette **index**, and one expression turns the
 chosen index into a colour. The expressions run in order, every millisecond:
 
 | Expression | Elements | Stack | Job |
 | --- | --- | --- | --- |
-| 1 | 282 | 7 | LED settings; power-on colour; Win+Ctrl+F keys → mode and brightness; number keys; layer change or number key → picked index. |
+| 1 | 335 | 7 | LED settings; power-on colour; Ctrl+Alt+F keys → mode and brightness; F1-F8 pass-through registers; number keys; layer change or number key → picked index. |
 | 2 | 168 | 13 | Animation state and the animation colour. |
 | 3 | 235 | 3 | Hub ports: counts the ports in use, then finds the n-th one for the current 0.6 s slot. Ends with `0 port`. |
 | 4 | 201 | 4 | Gamepad: button index, and the stick colour. |
@@ -252,17 +258,14 @@ chosen index into a colour. The expressions run in order, every millisecond:
 | 1, 2, 3 | `hidout`: report bytes 0-3 and 4-7, target `046D:C52B` |
 | 6 | Fn lock state: 1 = F-keys first, 2 = media keys first |
 | 7, 8 | power-on colour: seconds shown, colour |
-| 9, 10, 11 | stick hue angle, Y, X |
-| 12, 14, 15 | hub ports: current slot, running count, ports in use |
-| 13 | number key pressed while in mode 4 |
+| 9, 10, 11 | scratch values, reused by every expression (F key and Ctrl+Alt state; animation time and angle; hub port counters; stick X, Y, hue; index being shown) |
+| 12-15, 17, 21, 23, 24 | F1-F8 on their way to the computer (0 while Ctrl+Alt is held); mapping sources |
 | 16 | gamepad button index (0 = none) |
-| 17 | F key held together with Win and Ctrl (1-12, 0 = none) |
 | 18 | number key held (1-9, 10 for the 0 key, 0 = none) |
 | 19 | brightness as `0xII000000` |
-| 20 | mode (1-12) |
-| 21 | index being shown |
+| 20 | mode (1-8) |
 | 22 | stick colour |
-| 23, 24, 25 | animation: elapsed time, rainbow angle, start time |
+| 25 | animation start time |
 | 26 | hub port being shown |
 | 27 | animation colour |
 | 28 | picked index (number key or layer) |
@@ -273,7 +276,7 @@ chosen index into a colour. The expressions run in order, every millisecond:
 **Limits when editing.** The stack is **16** deep. There is no limit on the
 length of one expression, but the whole config must fit in 4096 bytes when
 saved: each word costs 1 byte and each number or hex value 5 bytes (this
-example's expressions use 2690). Decimal numbers are x1000 internally; hex
+example's expressions use 2815; the whole example is about 3.3 KB). Decimal numbers are x1000 internally; hex
 values are used as-is. `time_sec` is in milliseconds on that scale and wraps
 after about 24 days. `sin` takes degrees. `round` gives whole numbers, so
 `round 0x10000 mul` places a 0-255 value in the red byte and

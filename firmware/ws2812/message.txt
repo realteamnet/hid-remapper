@@ -1,7 +1,10 @@
-CLAUDE- ws2812 example: Win+Ctrl+F1-F12 select the mode
+CLAUDE- ws2812 example: Ctrl+Alt+F1-F8 select the mode and are not sent to the host
 
-Plain F keys no longer switch the LED mode; either Ctrl and either Win
-must be held. README key table updated.
+- F1-F8 are mapped to Nothing; expression 1 forwards each one through
+  a register unless Ctrl+Alt is held, and Register -> F key mappings
+  send them on. No layer is used for this.
+- Scratch values of the expressions now share registers 9-11.
+- README: key table, blocking explanation, register list.
 
 Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd
