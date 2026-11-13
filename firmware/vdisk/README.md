@@ -7,7 +7,7 @@ Adds a small USB flash drive to HID Remapper (the `remapper` target, RP2040 and 
 | `config.json` | The current configuration, in the same JSON format as the web config tool. It is generated from the live configuration when it is read. Copy it off to make a backup. |
 | `config.html` | The web config tool as one self-contained file. Open it in Chrome or Edge; it needs no internet connection. Its Examples list starts with the RGB LED demo (`firmware/ws2812/ws2812_example.json`) and the Logitech K400 Fn lock example (`firmware/hidout/hidout_example.json`). |
 | `DEBUG.TXT` | Debug builds only (`-DVDISK_DEBUG=ON`). Debug log, the last 4 KB (e.g. from the `hidout` module). Always exactly 4096 bytes (blank-padded), so the drive never remounts for it; read it uncached (e.g. `FILE_FLAG_NO_BUFFERING`) to see new lines, because a normal read may return Windows' cached copy. |
-| `autorun.inf` | Hidden, system, read-only. Only `label=HID-REMAPPER`, so Windows shows the drive as HID-REMAPPER (the FAT volume label, `HIDREMAPPER`, is limited to 11 characters). It starts nothing. |
+| `autorun.inf` | Hidden, system, read-only. `label=HID-REMAPPER` and `icon=%SystemRoot%\System32\joy.cpl,0` (the Game Controllers icon), so Windows shows the drive as HID-REMAPPER with that icon (the FAT volume label, `HIDREMAPPER`, is limited to 11 characters). It starts nothing. |
 | `readme.txt` | A short description of the above. |
 
 ## Using it
