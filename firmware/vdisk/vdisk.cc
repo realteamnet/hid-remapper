@@ -67,8 +67,7 @@ extern const uint8_t vdisk_tool_end[];
 
 static const char autorun[] =
     "[autorun]\r\n"
-    "label=HID-REMAPPER\r\n"
-    "icon=%SystemRoot%\\System32\\joy.cpl,0\r\n";
+    "label=HID-REMAPPER\r\n";
 
 static const char readme[] =
     "HID Remapper configuration drive\r\n"

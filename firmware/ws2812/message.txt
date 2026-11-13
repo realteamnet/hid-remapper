@@ -1,9 +1,7 @@
-CLAUDE-Web tool: stock layout, 8 layer boxes in two rows with numbers inside
+CLAUDE-Config drive: drop the icon from autorun.inf
 
-webtool.cmake: back to the stock column layout and 720 px page. Layer
-labels move into the boxes (bold, white on blue when checked) via a small
-style block; boxes are two rows of 4, the height of the Input/Output
-buttons. Sticky/Tap/Hold kept on one line.
+Windows did not show an icon from a system DLL (joy.cpl) for the
+removable drive; autorun.inf now only sets label=HID-REMAPPER.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd
