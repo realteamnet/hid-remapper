@@ -50,6 +50,7 @@ extern const uint8_t vdisk_tool_end[];
 #define QUIET_US 1500000
 #define LOG_SIZE CLUSTER
 #define LOG_REMOUNT_US 2000000
+#define LOG_REMOUNT_GAP_US 30000000
 #define EJECT_US 2500000
 
 // same bits as in config.cc
@@ -197,6 +198,7 @@ static char log_buf[LOG_SIZE];
 static uint32_t log_total = 0;
 static bool log_new = false;
 static uint64_t last_log = 0;
+static uint64_t last_log_remount = 0;
 static uint64_t eject_until = 0;
 
 static uint8_t* out_buf;
@@ -991,8 +993,9 @@ void vdisk_task() {
         return;
     }
     // new log lines: let the host see them once logging has paused
-    if (log_new && (now - last_log > LOG_REMOUNT_US)) {
+    if (log_new && (now - last_log > LOG_REMOUNT_US) && (now - last_log_remount > LOG_REMOUNT_GAP_US)) {
         log_new = false;
+        last_log_remount = now;
         changed = true;
     }
     if (!changed && (dropped[0].cluster != 0)) {

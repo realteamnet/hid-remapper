@@ -51,6 +51,7 @@ static uint32_t logged_selected = 0;
 static uint16_t reply_interface = 0xFFFF;
 static uint64_t reply_until = 0;
 static uint8_t replies_left = 0;
+static uint32_t last_reply = 0;
 
 static uint32_t mix(uint32_t h, uint32_t v) {
     return (h ^ v) * 16777619u;
@@ -253,6 +254,14 @@ void hidout_report_received(uint8_t dev_addr, uint8_t instance, const uint8_t* r
         return;
     }
     replies_left--;
+    uint32_t h = mix(mix(2166136261u, reply_interface), len);
+    for (uint16_t i = 0; i < len; i++) {
+        h = mix(h, report[i]);
+    }
+    if (h == last_reply) {
+        return;  // same answer as last time: logged once
+    }
+    last_reply = h;
     char bytes[3 * 20 + 1] = "";
     for (uint16_t i = 0; (i < len) && (i < 20); i++) {
         snprintf(bytes + 3 * i, 4, " %02x", report[i]);

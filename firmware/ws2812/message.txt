@@ -1,9 +1,8 @@
-CLAUDE- hidout: log the device's reply after a send
+CLAUDE- vdisk/hidout: stop remounting the drive every few seconds
 
-hidout_report_received() is called from report_received_callback()
-(gated). For 2 s after hidout sends a report to a device plugged into
-the remapper, up to 8 input reports from that interface go to LOG.TXT,
-e.g. the HID++ confirmation or error from a Logitech receiver.
+- hidout: log a device reply only when it differs from the last one
+  (the K400 example resends every 5 s and gets the same answer).
+- vdisk: remount for new LOG.TXT lines at most every 30 s.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd
