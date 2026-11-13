@@ -55,51 +55,17 @@ if(VDISK_ENABLE)
         file(DOWNLOAD ${VDISK_BOOTSTRAP_URL}/js/bootstrap.min.js ${CMAKE_CURRENT_BINARY_DIR}/vdisk_bootstrap.min.js
             EXPECTED_HASH SHA384=${VDISK_BOOTSTRAP_JS_SHA384})
 
-        # jsmin.c (https://github.com/douglascrockford/JSMin, commit 75b6ccc,
-        # unmodified) is built first for the build machine, like the SDK builds
-        # pioasm, and then used below to make the web tool file.
-        include(ExternalProject)
-        set(VDISK_JSMIN_SRC ${CMAKE_CURRENT_BINARY_DIR}/vdisk_jsmin_src)
-        file(WRITE ${VDISK_JSMIN_SRC}/CMakeLists.txt
-"cmake_minimum_required(VERSION 3.13)
-project(jsmin C)
-add_executable(jsmin ${CMAKE_CURRENT_LIST_DIR}/jsmin.c)
-install(TARGETS jsmin DESTINATION .)
-")
-        set(VDISK_JSMIN_INSTALL ${CMAKE_CURRENT_BINARY_DIR}/vdisk_jsmin_install)
-        ExternalProject_Add(vdiskJsminBuild
-            PREFIX vdisk_jsmin
-            SOURCE_DIR ${VDISK_JSMIN_SRC}
-            BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/vdisk_jsmin
-            INSTALL_DIR ${VDISK_JSMIN_INSTALL}
-            CMAKE_ARGS
-                "--no-warn-unused-cli"
-                "-DCMAKE_MAKE_PROGRAM:FILEPATH=${CMAKE_MAKE_PROGRAM}"
-                "-DCMAKE_INSTALL_PREFIX=${VDISK_JSMIN_INSTALL}"
-                "-DCMAKE_RULE_MESSAGES=OFF"
-                "-DCMAKE_INSTALL_MESSAGE=NEVER"
-            BUILD_BYPRODUCTS ${VDISK_JSMIN_INSTALL}/jsmin${CMAKE_HOST_EXECUTABLE_SUFFIX}
-            BUILD_ALWAYS 1
-        )
-        if(CMAKE_HOST_WIN32)
-            set(VDISK_JSMIN ${VDISK_JSMIN_INSTALL}/jsmin.exe)
-        else()
-            set(VDISK_JSMIN ${VDISK_JSMIN_INSTALL}/jsmin)
-        endif()
-
         add_custom_command(
             OUTPUT ${VDISK_TOOL_HTML}
             COMMAND ${CMAKE_COMMAND}
                 -DSRC=${VDISK_TOOL_SRC}
                 -DDEMO=${VDISK_DEMO}
                 -DDEMO2=${VDISK_DEMO2}
-                -DJSMIN=${VDISK_JSMIN}
                 -DCSS=${CMAKE_CURRENT_BINARY_DIR}/vdisk_bootstrap.min.css
                 -DBOOTSTRAP_JS=${CMAKE_CURRENT_BINARY_DIR}/vdisk_bootstrap.min.js
                 -DOUT=${VDISK_TOOL_HTML}
                 -P ${CMAKE_CURRENT_LIST_DIR}/webtool.cmake
             DEPENDS
-                vdiskJsminBuild
                 ${CMAKE_CURRENT_LIST_DIR}/webtool.cmake
                 ${VDISK_DEMO}
                 ${VDISK_DEMO2}

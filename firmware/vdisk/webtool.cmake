@@ -1,9 +1,9 @@
-# cmake -DSRC=<config-tool-web> -DDEMO=<json> -DDEMO2=<json> -DJSMIN=<jsmin> -DCSS=... -DBOOTSTRAP_JS=... -DOUT=... -P webtool.cmake
+# cmake -DSRC=<config-tool-web> -DDEMO=<json> -DDEMO2=<json> -DCSS=... -DBOOTSTRAP_JS=... -DOUT=... -P webtool.cmake
 #
 # Builds the single-file web config tool for the drive: the four scripts are
 # joined (imports/exports removed), the two demo configs are added as the first
-# examples, the result is minified with jsmin, and the scripts and Bootstrap
-# are put inline into index.html, so the page works without the internet.
+# examples, and the scripts and Bootstrap are put inline into index.html, so
+# the page works without the internet. The page is then gzipped.
 
 function(read_source name var)
     file(READ ${SRC}/${name} text)
@@ -32,7 +32,7 @@ string(REGEX REPLACE "\nexport default [A-Za-z_]+;" "\n" examples_js "${examples
 string(REGEX REPLACE "(^|\n)import [^\n]*" "\\1" code_js "${code_js}")
 
 fail_unless_once("${examples_js}" "const examples = [" "'const examples = [' in examples.js")
-string(REPLACE "const examples = [" "const examples = [\n{'description': 'RGB LED demo (WS2812 on GPIO16): F1-F5 modes, keys 1-0 colours, Scroll Lock cycles layers', 'config': ${demo}},
+string(REPLACE "const examples = [" "const examples = [\n{'description': 'RGB LED demo (WS2812 on GPIO16): Ctrl+Alt+F1-F5 modes, keys 1-0 colours, Scroll Lock cycles layers', 'config': ${demo}},
 {'description': 'Logitech K400: Fn+Esc toggles Fn lock (needs the hidout module)', 'config': ${demo2}}," examples_js "${examples_js}")
 
 set(app_js "${crc_js}\n${usages_js}\n${examples_js}\n${code_js}")
@@ -41,12 +41,6 @@ if(leftover)
     message(FATAL_ERROR "webtool.cmake: an import or export is left in the joined scripts")
 endif()
 
-file(WRITE ${OUT}.js "${app_js}")
-execute_process(COMMAND ${JSMIN} INPUT_FILE ${OUT}.js OUTPUT_FILE ${OUT}.min.js RESULT_VARIABLE result)
-if(NOT result EQUAL 0)
-    message(FATAL_ERROR "webtool.cmake: jsmin failed (${result})")
-endif()
-file(READ ${OUT}.min.js app_js)
 file(READ ${CSS} css)
 file(READ ${BOOTSTRAP_JS} bootstrap_js)
 

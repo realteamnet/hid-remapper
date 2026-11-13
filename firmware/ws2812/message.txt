@@ -1,10 +1,8 @@
-CLAUDE- ws2812 example: Ctrl+Alt+F1-F8 select the mode and are not sent to the host
+CLAUDE- vdisk: drop jsmin, the web tool is only gzipped
 
-- F1-F8 are mapped to Nothing; expression 1 forwards each one through
-  a register unless Ctrl+Alt is held, and Register -> F key mappings
-  send them on. No layer is used for this.
-- Scratch values of the expressions now share registers 9-11.
-- README: key table, blocking explanation, register list.
+After gzip, minifying saved about 10 KB of WEBTOOL.HTM, so jsmin.c and
+its host build are removed. The web tool build now needs only CMake.
+WEBTOOL.HTM is about 166 KB.
 
 Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd
