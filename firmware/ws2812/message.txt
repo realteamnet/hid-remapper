@@ -1,7 +1,9 @@
-CLAUDE-Web tool: fit 8 layers without horizontal scroll
+CLAUDE-Web tool: stock layout, 8 layer boxes in two rows with numbers inside
 
-webtool.cmake: page max-width 720 -> 900 px, gx-2 column gaps in the
-mapping header and rows; drop the 1080 px table min-width.
+webtool.cmake: back to the stock column layout and 720 px page. Layer
+labels move into the boxes (bold, white on blue when checked) via a small
+style block; boxes are two rows of 4, the height of the Input/Output
+buttons. Sticky/Tap/Hold kept on one line.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd
