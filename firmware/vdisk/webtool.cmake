@@ -33,7 +33,7 @@ string(REGEX REPLACE "(^|\n)import [^\n]*" "\\1" code_js "${code_js}")
 
 fail_unless_once("${examples_js}" "const examples = [" "'const examples = [' in examples.js")
 string(REPLACE "const examples = [" "const examples = [\n{'description': 'RGB LED demo (WS2812 on GPIO16): Ctrl+Alt+F1-F5 modes, keys 1-0 colours, Scroll Lock cycles layers', 'config': ${demo}},
-{'description': 'Logitech K400: Fn+Esc toggles Fn lock (needs the hidout module)', 'config': ${demo2}}," examples_js "${examples_js}")
+{'description': 'Logitech K400 / K400r / K400 Plus: Fn+Esc toggles Fn lock (needs the hidout module)', 'config': ${demo2}}," examples_js "${examples_js}")
 
 set(app_js "${crc_js}\n${usages_js}\n${examples_js}\n${code_js}")
 string(REGEX MATCH "(^|\n)(import|export) " leftover "${app_js}")

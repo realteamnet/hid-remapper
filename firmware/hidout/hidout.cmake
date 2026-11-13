@@ -6,8 +6,8 @@ endif()
 if(NOT DEFINED HIDOUT_REGISTER)
     set(HIDOUT_REGISTER 1)
 endif()
-if(NOT DEFINED HIDOUT_TARGETS)
-    set(HIDOUT_TARGETS 3)
+if(NOT DEFINED HIDOUT_TABLE)
+    set(HIDOUT_TABLE 8)
 endif()
 
 if(HIDOUT_ENABLE)
@@ -16,6 +16,6 @@ if(HIDOUT_ENABLE)
     target_compile_definitions(remapper PRIVATE
         HIDOUT_ENABLED
         HIDOUT_REGISTER=${HIDOUT_REGISTER}
-        HIDOUT_TARGETS=${HIDOUT_TARGETS}
+        HIDOUT_TABLE=${HIDOUT_TABLE}
     )
 endif()

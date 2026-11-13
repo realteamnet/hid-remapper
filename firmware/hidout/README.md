@@ -1,63 +1,94 @@
 # hidout
 
-Lets a hid-remapper **expression send a HID output report to a connected device**, for example a vendor command that the device's own software would normally send. The config decides what is sent and to which devices; the firmware has nothing device-specific in it.
+Lets a hid-remapper config **send HID output reports to connected devices**, for example a vendor command that the device's own software would normally send. The config holds a table of messages, each with its own target devices, and an expression picks which ones are sent. The firmware has nothing device-specific in it.
 
-- **Dormant by default.** While the first register's top byte (the report ID) is 0, nothing is sent. That is always the case on upstream firmware, which ignores these registers, so configs that use them still load there.
+- **Dormant by default.** While the selector register is 0, nothing is sent. That is always the case on upstream firmware, which ignores the register and never runs the table as anything but a list of numbers, so configs that use it still load there.
 - **Optional.** `-DHIDOUT_ENABLE=OFF` leaves it out of the build.
 
-## Registers
+## The table
 
-| Register (default) | Value |
+The table is an ordinary expression, by default **expression 8** (`HIDOUT_TABLE`). Each line is one message:
+
+```
+<length> <report words...> <targets...>
+```
+
+| Part | Meaning |
 | --- | --- |
-| `HIDOUT_REGISTER` (1) | Bytes 0-3 of the report, written `0xB0B1B2B3`. **B0 is the report ID**; `0` = idle. |
-| `HIDOUT_REGISTER + 1` (2) | Bytes 4-7, written `0xB4B5B6B7`. |
-| next `HIDOUT_TARGETS` registers (3, 4, 5) | Target array. Each entry is `0xVVVV` = every product of vendor VVVV, or `0xVVVVPPPP` = exactly that VID:PID, or `0` = unused. **All 0 = any device.** |
+| `<length>` | Length of the report in bytes, **including the report ID**, as a plain decimal (e.g. `7` for a HID++ short report, `20` for a long one). At most 64. |
+| `<report words>` | The report as 32-bit hex words, first byte first, **report ID first**: `10 01 0F 1A 00 00 00` is written `0x10010F1A 0x00000000`. As many words as the length needs (`7` → 2 words); unused bytes of the last word are ignored. |
+| `<targets>` | Any number of devices, any mix of: `0xVVVV` = every product of vendor VVVV; `0xVVVVPPPP` = exactly that VID:PID. **No targets = any device** that declares an output report with that report ID. |
 
-- **Where it goes.** The report goes to every connected device interface that declares an output report with that report ID and matches any target entry.
-- **Length.** The interface's declared size of that report, at most 7 bytes after the report ID; missing bytes are 0.
-- **When it is sent.**
-  - Once when the registers change (the report bytes or the targets).
-  - Again when a matching device appears later, e.g. after the receiver is plugged back in. The module checks 4 times a second.
-  - Not on every tick, so writing the registers every tick is fine.
-- **Report types.** Only output reports (HID SET_REPORT, type Output); feature reports are not sent.
+- **Line numbers** count only lines that have values, from 0. Comment-only lines don't count, so each message can have a comment line above it.
+- **Comments** are not stored on the device, so a config read back from the device shows the table without them.
+- **Malformed lines** (too few words for the length, a length below 2, or report ID 0) keep their line number but are never sent.
+- **Evaluation:** hid-remapper also evaluates the table every tick as if it were a normal expression. It only pushes numbers, which is harmless. With more than 16 values hid-remapper marks it invalid and skips it, which is harmless too, because `hidout` reads the table directly.
+
+## The selector register
+
+`HIDOUT_REGISTER` (default **register 1**) selects the lines: **bit n = line n** (`0x1` = line 0, `0x2` = line 1, `0x4` = line 2, …), up to 32 lines. Several bits may be set at once.
+
+- **A line is sent** to each matching device when its bit turns on.
+- **It is sent again** when a matching device appears later (e.g. the receiver is plugged back in; checked 4 times a second), and when the table is edited.
+- **It is not sent on every tick**, so writing the register every tick is fine.
+- **Forcing a resend:** writing 0 for one tick and then the bits again sends the selected lines again. Use this for devices that forget a setting when they are switched off.
+- **Length sent:** the report goes out with the length the device declares for that report ID (padded with zeros, or cut at 63 bytes after the ID). If the device doesn't declare it, the length from the table is used.
+- **Report types:** only output reports (HID SET_REPORT, type Output); feature reports are not sent.
 - **Not supported:** reading replies. If a command needs a value the device reports first, this module can't do it.
 
-## Example: Logitech K400r Fn lock on Fn+Esc
+## Example: Logitech K400 family, Fn lock on Fn+Esc
 
-The K400r's Fn lock (F1-F12 or media keys first) is normally switched by Logitech software. It is a HID++ 2.0 command to the keyboard through its Unifying receiver (`046D:C52B`), feature FN_INVERSION (`0x40A0`):
+`hidout_example.json` in this folder. It is also the second entry under Examples in the config drive's web tool.
 
-- F-keys first: `10 01 0F 1A 00 00 00`
-- media keys first: `10 01 0F 1A 01 00 00`
+The K400's Fn lock (F1-F12 or media keys first) is normally switched by Logitech software. It is a HID++ 2.0 command to the keyboard through its Unifying receiver (`046D:C52B`), feature FN_INVERSION (`0x40A0`). The feature's index differs per model:
 
-(report ID `10`, keyboard in receiver slot `01`, feature index `0F`, function 1 with software ID `A`, then the value). These were found and confirmed on a K400r (wireless PID `4024`) on 2026-11-13. On the K400r, Fn+Esc reaches the host as **Power** (`0x00070066`), so it is the trigger.
+| Model | Feature index | F-keys first | Media keys first | Source |
+| --- | --- | --- | --- | --- |
+| K400r (and K400) | `0F` | `10 01 0F 1A 00 00 00` | `10 01 0F 1A 01 00 00` | Read from a K400r (wireless PID `4024`) and confirmed on it, 2026-11-13. The original K400 shares that wireless PID family; assumed the same, not tested. |
+| K400 Plus | `09` | `10 01 09 19 00 00 00` | `10 01 09 18 01 00 00` | From github.com/h8man/k400p-fn-lock-win and github.com/sginne/fn_key_k400_for_logitech; not tested here. |
 
+`01` is the keyboard's slot on its receiver. The receiver is the same (`C52B`) for all models, so the firmware can't tell which model is behind it. The config says so.
+
+Expression 8, the table:
 ```
-/* register 6 = 1 F-keys first, 2 media keys first; 1 at power-on */
+/* line 0: K400 / K400r, F-keys first */
+7 0x10010F1A 0x00000000 0x046DC52B
+/* line 1: K400 / K400r, media keys first */
+7 0x10010F1A 0x01000000 0x046DC52B
+/* line 2: K400 Plus, F-keys first */
+7 0x10010919 0x00000000 0x046DC52B
+/* line 3: K400 Plus, media keys first */
+7 0x10010918 0x01000000 0x046DC52B
+```
+
+Expression 1, the logic:
+```
+/* keyboard model: 0x1 = K400 or K400r, 0x2 = K400 Plus */
+0x1 2 store
+/* Fn lock at boot: 0x1 = F-keys first, 0x2 = media keys first */
 6 recall 0 eq 0x1 6 recall ifte 6 store
-/* Fn+Esc (Power) toggles it */
+/* Fn+Esc (reported as Power) toggles it */
 0x00070066 input_state_binary 0x00070066 prev_input_state_binary not mul
 0x3 6 recall sub 6 recall ifte 6 store
-/* the report; register 1 is 0 for one tick every 5 s so it is sent again */
-0x10010F1A time_sec 5 mod 0.001 lt not mul 1 store
-6 recall 0x1 eq 0x00000000 0x01000000 ifte 2 store
-/* the target */
-0x046DC52B 3 store
+/* select table line 0-3; 0 for one tick every 5 s so it is sent again */
+2 recall 0x1 eq 6 recall 0x1 eq 0x1 0x2 ifte 6 recall 0x1 eq 0x4 0x8 ifte ifte
+time_sec 5 mod 0.001 lt not mul 1 store
 ```
 
-- **Map Power (`0x00070066`) → Nothing** on every layer, or the computer gets a Power key press (sleep or shutdown) with every Fn+Esc.
-- **Resend every 5 s:** the keyboard forgets the setting when it is switched off. Writing 0 to register 1 for one tick makes `hidout` send the report again, so the setting comes back within 5 s after the keyboard wakes. While the keyboard is off, the receiver just answers with an error. Change `5` to resend less often.
-- Use hex (`0x1`) for raw values; plain decimals are stored ×1000.
-- `hidout_example.json` in this folder is a config with only this (one expression and the mapping). `firmware/ws2812/ws2812_example.json` also contains it (expression 6 and the mapping). Both are listed under Examples in the config drive's web tool.
-- **Other models:** the feature index differs per model (the K400 Plus has it at `09`). If the keyboard is in another receiver slot, change `01`. The index and slot can be read from the keyboard with a HID++ root lookup (`10 <slot> 00 0A 40 A0 00` → reply byte 4).
-- **Two receivers of the same type** (e.g. a second Unifying receiver with mice) both match `0x046DC52B`. The command then also goes to the other receiver's slot 1, which would run function 1 of whatever feature that device has at index `0F`. Only plug the keyboard's receiver into the remapper, or make sure slot 1 of the other receiver is not affected.
+- **Settings:** the keyboard model (register 2) and the Fn lock at boot (the `0x1` in the second line) are at the top. Register 6 holds the current state.
+- **Map Power (`0x00070066`) → Nothing** on every layer (the example does). On the K400 family Fn+Esc reaches the host as Power, and the computer would otherwise sleep or shut down with every press.
+- **Resend every 5 s:** the keyboard forgets the setting when it is switched off. The selector is 0 for one tick every 5 s, so the setting comes back within 5 s after the keyboard wakes. While the keyboard is off, the receiver just answers with an error. Change `5` to resend less often.
+- **Raw values:** use hex (`0x1`) for raw values; plain decimals are stored ×1000. The table's length is the one decimal: the firmware divides it by 1000.
+- **Other slots or models:** if the keyboard is in another receiver slot, change the second byte (`01`). For another model, the index and slot can be read from the keyboard with a HID++ root lookup (`10 <slot> 00 0A 40 A0 00` → reply byte 4 is the index).
+- **Two receivers of the same type** (e.g. a second Unifying receiver with mice) both match `0x046DC52B`. The command then also reaches slot 1 of the other receiver, which would run function 1 of whatever feature that device has at the same index. Plug only the keyboard's receiver into the remapper, or make sure slot 1 of the other receiver is not affected.
 
 ## Build
 
 | CMake setting | Default | Meaning |
 | --- | --- | --- |
 | `HIDOUT_ENABLE` | `ON` | Build the module into `remapper`. |
-| `HIDOUT_REGISTER` | `1` | First of the two report registers. |
-| `HIDOUT_TARGETS` | `3` | Length of the target array (one register each). `HIDOUT_REGISTER + 1 + HIDOUT_TARGETS` must be ≤ 32. |
+| `HIDOUT_REGISTER` | `1` | The selector register (1-32). |
+| `HIDOUT_TABLE` | `8` | The expression that holds the table (1-8). |
 
 ## Changes to hid-remapper's own files
 
@@ -68,9 +99,11 @@ The K400r's Fn lock (F1-F12 or media keys first) is normally switched by Logitec
 
 ## How it works
 
-- `hidout_task()` reads the registers (`extern int32_t registers[]`, `remapper.cc`).
-- When they change, or every 250 ms while active, it walks `their_out_usages` (all connected interfaces' output reports) under the `THEIR_USAGES` mutex.
-- The VID:PID of each interface's device comes from TinyUSB's `tuh_vid_pid_get()`.
-- For each match not yet sent to, it calls `queue_out_report()` with the length from `out_report_sizes`.
-- It remembers which interfaces got the current report; interfaces that disappear drop out of that list, so they get it again when they return.
-- A device that rejects the report does not block hid-remapper's output queue (TinyUSB still reports completion). The queue holds 8 reports, so with more than about 8 matching interfaces at once the rest are skipped.
+- `hidout_task()` reads the selector (`extern int32_t registers[]`, `remapper.cc`).
+- When it changes, or every 250 ms while it is not 0, `hidout_task()` does the following:
+  - It reads the table from `expressions[]` under the `EXPRESSIONS` mutex: values grouped by `eol`, the first value of a line divided by 1000. A hash of the table detects edits.
+  - For each selected line, it walks `their_out_usages` (all connected interfaces' output reports) under the `THEIR_USAGES` mutex.
+  - It checks targets with TinyUSB's `tuh_vid_pid_get()`.
+  - It calls `queue_out_report()` for each matching interface the line has not been sent to yet.
+- Per line it remembers which interfaces got it; interfaces that disappear drop out of that list, so they get it again when they return.
+- A device that rejects a report does not block hid-remapper's output queue (TinyUSB still reports completion). The queue holds 8 reports, so with more than about 8 sends at once the rest are skipped until the next change.

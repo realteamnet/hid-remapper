@@ -1,10 +1,15 @@
-CLAUDE- K400r Fn lock: feature index 0F, resend every 5 s
+CLAUDE- hidout: message table; K400 family Fn lock example; RGB example LED-only
 
-The K400 Plus bytes (index 09) did nothing on the K400r. Its
-FN_INVERSION feature is at index 0F (found and confirmed on the
-keyboard): 10 01 0F 1A 00|01 00 00. The examples now send that, and
-write 0 to register 1 for one tick every 5 s so hidout resends it,
-because the keyboard forgets the setting when switched off.
+- hidout reads its messages from a table in an expression (default 8):
+  one line per message, <length> <report words> <targets>, targets
+  0xVVVV (any product of a vendor) or 0xVVVVPPPP, none = any device.
+  A selector register (default 1) has a bit per line. Lines are sent
+  when selected, again when a matching device reappears, when the table
+  changes, or after the selector was 0 for a tick. Up to 64-byte reports.
+- hidout_example.json: Logitech K400/K400r (index 0F, confirmed on a
+  K400r) and K400 Plus (index 09) Fn lock on Fn+Esc, with a model
+  setting, the Fn lock at boot, and a resend every 5 s.
+- ws2812_example.json: the K400 parts are removed; LED only again.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd
