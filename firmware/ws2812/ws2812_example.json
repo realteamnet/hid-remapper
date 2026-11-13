@@ -111,6 +111,26 @@
             "scaling": 1000,
             "source_port": 0,
             "target_port": 0
+        },
+        {
+            "source_usage": "0x00070066",
+            "target_usage": "0x00000000",
+            "layers": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+            ],
+            "sticky": false,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
         }
     ],
     "macros": [
@@ -153,7 +173,7 @@
         "/* mode 3: show the hub ports in use, 0.6 s each (port 1 = color 1) */ eol 1000 port plugged_in 2000 port plugged_in add 3000 port plugged_in add 4000 port plugged_in add 5000 port plugged_in add 6000 port plugged_in add 7000 port plugged_in add 8000 port plugged_in add 1000 max 15000 store eol time_sec 504000 mod 600 div 500 sub round 15000 recall mod 12000 store 0 14000 store 0 26000 store eol 1000 port plugged_in 14000 recall 12000 recall eq mul 1000 26000 recall ifte 26000 store 14000 recall plugged_in add 14000 store eol 2000 port plugged_in 14000 recall 12000 recall eq mul 2000 26000 recall ifte 26000 store 14000 recall plugged_in add 14000 store eol 3000 port plugged_in 14000 recall 12000 recall eq mul 3000 26000 recall ifte 26000 store 14000 recall plugged_in add 14000 store eol 4000 port plugged_in 14000 recall 12000 recall eq mul 4000 26000 recall ifte 26000 store 14000 recall plugged_in add 14000 store eol 5000 port plugged_in 14000 recall 12000 recall eq mul 5000 26000 recall ifte 26000 store 14000 recall plugged_in add 14000 store eol 6000 port plugged_in 14000 recall 12000 recall eq mul 6000 26000 recall ifte 26000 store 14000 recall plugged_in add 14000 store eol 7000 port plugged_in 14000 recall 12000 recall eq mul 7000 26000 recall ifte 26000 store 14000 recall plugged_in add 14000 store eol 8000 port plugged_in 14000 recall 12000 recall eq mul 8000 26000 recall ifte 26000 store 14000 recall plugged_in add 14000 store eol 0 port",
         "/* mode 5: gamepad buttons 1-13, the highest one held wins */ eol 0 eol 0x00090001 input_state_binary swap 1000 swap ifte eol 0x00090002 input_state_binary swap 2000 swap ifte eol 0x00090003 input_state_binary swap 3000 swap ifte eol 0x00090004 input_state_binary swap 4000 swap ifte eol 0x00090005 input_state_binary swap 5000 swap ifte eol 0x00090006 input_state_binary swap 6000 swap ifte eol 0x00090007 input_state_binary swap 7000 swap ifte eol 0x00090008 input_state_binary swap 8000 swap ifte eol 0x00090009 input_state_binary swap 9000 swap ifte eol 0x0009000a input_state_binary swap 11000 swap ifte eol 0x0009000b input_state_binary swap 12000 swap ifte eol 0x0009000c input_state_binary swap 13000 swap ifte eol 0x0009000d input_state_binary swap 14000 swap ifte eol 16000 store eol /* sticks: direction is the hue, deflection is the brightness */ eol 0x00010030 input_state_scaled 0x00010032 input_state_scaled add 256000 sub 11000 store eol 0x00010031 input_state_scaled 0x00010035 input_state_scaled add 256000 sub 10000 store eol 10000 recall 11000 recall atan2 9000 store eol 11000 recall dup mul 10000 recall dup mul add sqrt dup 20000 gt 11000 recall 10000 recall add -512000 eq not mul swap eol 2000 mul 0 255000 clamp round 0x1000000 mul eol 9000 recall sin 1000 add 127500 mul round 0x10000 mul add 9000 recall 120000 add sin 1000 add 127500 mul round 0x100 mul add 9000 recall 240000 add sin 1000 add 127500 mul round 0x1 mul add eol 0 ifte 22000 store",
         "/* color index: hub port in mode 3, gamepad button in mode 5, otherwise the picked color */ eol 20000 recall 3000 eq 26000 recall 20000 recall 5000 eq 16000 recall 28000 recall ifte ifte 21000 store eol /* palette */ eol 21000 recall 1000 eq 0x00FFFFFF mul /* 1: white */ eol 21000 recall 2000 eq 0x00FF0000 mul add /* 2: red */ eol 21000 recall 3000 eq 0x00FF2800 mul add /* 3: orange */ eol 21000 recall 4000 eq 0x00FF9000 mul add /* 4: yellow */ eol 21000 recall 5000 eq 0x0000FF00 mul add /* 5: green */ eol 21000 recall 6000 eq 0x0000FFFF mul add /* 6: cyan */ eol 21000 recall 7000 eq 0x000000FF mul add /* 7: blue */ eol 21000 recall 8000 eq 0x00FF00FF mul add /* 8: magenta */ eol 21000 recall 9000 eq 0x00FF0040 mul add /* 9: pink */ eol 21000 recall 11000 eq 0x0080FF00 mul add /* 11: lime */ eol 21000 recall 12000 eq 0x0000FF60 mul add /* 12: teal */ eol 21000 recall 13000 eq 0x008000FF mul add /* 13: purple */ eol 21000 recall 14000 eq 0x00FFC0A0 mul add /* 14: warm white */ eol 19000 recall bitwise_or eol /* sticks when no button is held, animation in mode 4 */ eol 20000 recall 5000 eq 16000 recall not mul swap 22000 recall swap ifte eol 20000 recall 4000 eq 29000 recall 6000 lt mul 29000 recall mul swap 27000 recall swap ifte eol /* power-on color */ eol time_sec 7000 recall lt swap 8000 recall swap ifte eol 32000 store",
-        "",
+        "/* Fn lock (Logitech K400, needs the hidout module): register 6 = 1 F-keys first, 2 media keys first */ eol 6000 recall 0 eq 0x1 6000 recall ifte 6000 store eol /* Fn+Esc (reported as Power) toggles it */ eol 0x00070066 input_state_binary 0x00070066 prev_input_state_binary not mul eol 0x3 6000 recall sub 6000 recall ifte 6000 store eol /* HID++ report 10 01 09 19|18 00|01 00 00 to the Unifying receiver 046D:C52B */ eol 6000 recall 0x1 eq 0x10010919 0x10010918 ifte 1000 store eol 6000 recall 0x1 eq 0x00000000 0x01000000 ifte 2000 store eol 0x046DC52B 3000 store",
         "",
         ""
     ],

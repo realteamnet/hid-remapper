@@ -1,8 +1,8 @@
-# cmake -DSRC=<config-tool-web> -DDEMO=<json> -DJSMIN=<jsmin> -DCSS=... -DBOOTSTRAP_JS=... -DOUT=... -P webtool.cmake
+# cmake -DSRC=<config-tool-web> -DDEMO=<json> -DDEMO2=<json> -DJSMIN=<jsmin> -DCSS=... -DBOOTSTRAP_JS=... -DOUT=... -P webtool.cmake
 #
 # Builds the single-file web config tool for the drive: the four scripts are
-# joined (imports/exports removed), the demo config is added as the first
-# example, the result is minified with jsmin, and the scripts and Bootstrap
+# joined (imports/exports removed), the two demo configs are added as the first
+# examples, the result is minified with jsmin, and the scripts and Bootstrap
 # are put inline into index.html, so the page works without the internet.
 
 function(read_source name var)
@@ -24,6 +24,7 @@ read_source(usages.js usages_js)
 read_source(examples.js examples_js)
 read_source(code.js code_js)
 file(READ ${DEMO} demo)
+file(READ ${DEMO2} demo2)
 
 string(REPLACE "export default function" "function" crc_js "${crc_js}")
 string(REGEX REPLACE "\nexport default [A-Za-z_]+;" "\n" usages_js "${usages_js}")
@@ -31,7 +32,8 @@ string(REGEX REPLACE "\nexport default [A-Za-z_]+;" "\n" examples_js "${examples
 string(REGEX REPLACE "(^|\n)import [^\n]*" "\\1" code_js "${code_js}")
 
 fail_unless_once("${examples_js}" "const examples = [" "'const examples = [' in examples.js")
-string(REPLACE "const examples = [" "const examples = [\n{'description': 'RGB LED demo (WS2812 on GPIO16): F1-F5 modes, keys 1-0 colours, Scroll Lock cycles layers', 'config': ${demo}}," examples_js "${examples_js}")
+string(REPLACE "const examples = [" "const examples = [\n{'description': 'RGB LED demo (WS2812 on GPIO16): F1-F5 modes, keys 1-0 colours, Scroll Lock cycles layers', 'config': ${demo}},
+{'description': 'Logitech K400: Fn+Esc toggles Fn lock (needs the hidout module)', 'config': ${demo2}}," examples_js "${examples_js}")
 
 set(app_js "${crc_js}\n${usages_js}\n${examples_js}\n${code_js}")
 string(REGEX MATCH "(^|\n)(import|export) " leftover "${app_js}")

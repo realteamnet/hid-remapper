@@ -34,6 +34,9 @@
 #ifdef VDISK_ENABLED
 #include "vdisk.h"
 #endif
+#ifdef HIDOUT_ENABLED
+#include "hidout.h"
+#endif
 
 // RP2350 UF2s wipe the last sector of flash every time
 // because of RP2350-E10 errata mitigation. So we put
@@ -332,6 +335,9 @@ int main() {
         activity_led_off_maybe();
 #ifdef WS2812_ENABLED
         ws2812_led_task();
+#endif
+#ifdef HIDOUT_ENABLED
+        hidout_task();
 #endif
     }
 

@@ -1,18 +1,16 @@
-CLAUDE- ws2812 folder/file names; WEBTOOL.HTM built with jsmin + CMake gzip
+CLAUDE- hidout: send a HID output report from an expression; K400 Fn lock example
 
-- firmware/rgb-led -> firmware/ws2812; ws2812_led.cc/.h -> ws2812.cc/.h;
-  ws2812_rgb_led.json -> ws2812_example.json.
-- vdisk web tool, built during make with CMake and a C compiler only
-  (webtool.py removed; config-tool-web untouched):
-  - Bootstrap downloaded at configure time, checked against the hashes
-    in index.html;
-  - jsmin.c (Crockford's JSMin, unmodified) built first for the build
-    machine via ExternalProject, like pioasm;
-  - webtool.cmake joins the scripts, puts ws2812_example.json first in
-    the examples, minifies with jsmin, inlines everything into
-    index.html, gzips it with file(ARCHIVE_CREATE) and wraps it in a
-    loader that unpacks it with DecompressionStream.
-  WEBTOOL.HTM: 736 KB -> about 155 KB.
+- New optional module firmware/hidout: registers 1-2 hold the report
+  bytes (report ID first, 0 = idle), registers 3-5 a target array of
+  0xVVVV (any product of a vendor) or 0xVVVVPPPP entries; all 0 = any
+  device. Sent once per change, and again when a matching device
+  reappears. Gated edits: include line in CMakeLists.txt, include and
+  hidout_task() in main.cc.
+- hidout_example.json: Logitech K400 Fn lock toggled by Fn+Esc
+  (reported as Power), with Power mapped to Nothing. The same is added
+  to ws2812_example.json as expression 6.
+- vdisk: the web tool lists both examples first; the drive is added
+  only for device types 0 and 1 (was: any type without its own VID).
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd

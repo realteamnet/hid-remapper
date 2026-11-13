@@ -170,7 +170,8 @@ it stays:
 
 ### What the keys do
 
-All keys still reach the computer, except Scroll Lock.
+All keys still reach the computer, except Scroll Lock and Power (Fn+Esc on a
+Logitech K400, see "Fn lock" below).
 
 | Key | Mode | In that mode |
 | --- | --- | --- |
@@ -214,6 +215,15 @@ indexes 1-9 and buttons 10-13 use 11-14.
   brightness; both sticks are added together (left = X/Y, right = Z/Rz, as
   hid-remapper normalises gamepads).
 
+### Fn lock (Logitech K400)
+
+Expression 6 uses the `hidout` module (`firmware/hidout/`) to switch the
+K400's Fn lock: at power-on F1-F12 come first, and **Fn+Esc** (which the K400
+reports as Power, `0x00070066`) toggles to media keys first and back. A
+mapping Power → Nothing keeps that key from reaching the computer. Without a
+K400 on a Unifying receiver, or on firmware without `hidout`, it does
+nothing. See `firmware/hidout/README.md` for the bytes and caveats.
+
 ### How it is built
 
 **Layers.** Seven sticky mappings, Scroll Lock → Layer k+1 on layer k
@@ -230,9 +240,12 @@ chosen index into a colour. The expressions run in order, every millisecond:
 | 3 | 235 | 3 | Hub ports: counts the ports in use, then finds the n-th one for the current 0.6 s slot. Ends with `0 port`. |
 | 4 | 201 | 4 | Gamepad: button index, and the stick colour. |
 | 5 | 174 | 5 | Picks the index for the mode, looks it up in the palette, adds the brightness, and lets the stick colour, animation or power-on colour override it. Writes register 32. |
+| 6 | 54 | 3 | Fn lock: state in register 6, toggled by Power (Fn+Esc); writes the HID++ report and its target to registers 1-3 for `hidout`. |
 
 | Register | Meaning |
 | --- | --- |
+| 1, 2, 3 | `hidout`: report bytes 0-3 and 4-7, target `046D:C52B` |
+| 6 | Fn lock state: 1 = F-keys first, 2 = media keys first |
 | 7, 8 | power-on colour: seconds shown, colour |
 | 9, 10, 11 | stick hue angle, Y, X |
 | 12, 14, 15 | hub ports: current slot, running count, ports in use |
@@ -255,7 +268,7 @@ chosen index into a colour. The expressions run in order, every millisecond:
 **Limits when editing.** The stack is **16** deep. There is no limit on the
 length of one expression, but the whole config must fit in 4096 bytes when
 saved: each word costs 1 byte and each number or hex value 5 bytes (this
-example's expressions use 2514). Decimal numbers are x1000 internally; hex
+example's expressions use 2660). Decimal numbers are x1000 internally; hex
 values are used as-is. `time_sec` is in milliseconds on that scale and wraps
 after about 24 days. `sin` takes degrees. `round` gives whole numbers, so
 `round 0x10000 mul` places a 0-255 value in the red byte and

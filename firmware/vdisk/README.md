@@ -7,7 +7,7 @@ Adds a small USB flash drive to HID Remapper (the `remapper` target, RP2040 and 
 | `config.json` | The current configuration, in the same JSON format as the web config tool. It is generated from the live configuration when it is read. Copy it off to make a backup. |
 | `APPLY\` | Copy a configuration `.json` file into this folder to load it. The device applies it and saves it to flash, as "Save to device" does in the web tool. |
 | `STATUS.TXT` | Result of the last file copied into `APPLY`: `OK: ...` or `ERROR: ...`. |
-| `WEBTOOL.HTM` | The web config tool as one self-contained file. Open it in Chrome or Edge; it needs no internet connection. Its Examples list starts with the RGB LED demo (`firmware/ws2812/ws2812_example.json`). |
+| `WEBTOOL.HTM` | The web config tool as one self-contained file. Open it in Chrome or Edge; it needs no internet connection. Its Examples list starts with the RGB LED demo (`firmware/ws2812/ws2812_example.json`) and the Logitech K400 Fn lock example (`firmware/hidout/hidout_example.json`). |
 | `README.TXT` | A short description of the above. |
 
 ## Using it
@@ -24,7 +24,7 @@ Adds a small USB flash drive to HID Remapper (the `remapper` target, RP2040 and 
 - A file is only applied if it is complete, valid and small enough to be saved. Otherwise the running configuration is left untouched.
 - Nothing else written to the drive is kept. Files outside `APPLY` are ignored.
 - The file's data must be written in ascending order in one piece. Windows, Linux and macOS do this for a normal copy.
-- The drive is not added when the device emulates a console controller (Switch, PS4, Stadia), so those keep their exact USB descriptors.
+- The drive is only added for the two default device types (mouse and keyboard, absolute mouse and keyboard). The gamepad types (Switch, PS4, Stadia, XAC/Flex) keep their exact USB descriptors.
 - `WEBTOOL.HTM` is built from `config-tool-web` when the firmware is built, so it always matches the firmware. `config-tool-web` itself is not changed: the RGB LED demo is only added to the drive's copy.
 - The web tool adds about 155 KB to the firmware image. The file is a small loader holding the gzipped page; the browser unpacks it when it is opened (Chrome or Edge 80+, which WebHID needs anyway).
 

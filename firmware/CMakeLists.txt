@@ -76,6 +76,7 @@ target_link_libraries(remapper
 
 include(ws2812/ws2812.cmake OPTIONAL)
 include(vdisk/vdisk.cmake OPTIONAL)
+include(hidout/hidout.cmake OPTIONAL)
 
 pico_set_binary_type(remapper copy_to_ram)
 if(PICO_PLATFORM STREQUAL "rp2040")

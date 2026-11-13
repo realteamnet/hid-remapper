@@ -36,6 +36,7 @@ if(VDISK_ENABLE)
     if(VDISK_WEB_TOOL)
         set(VDISK_TOOL_SRC ${CMAKE_CURRENT_LIST_DIR}/../../config-tool-web)
         set(VDISK_DEMO ${CMAKE_CURRENT_LIST_DIR}/../ws2812/ws2812_example.json)
+        set(VDISK_DEMO2 ${CMAKE_CURRENT_LIST_DIR}/../hidout/hidout_example.json)
         set(VDISK_TOOL_HTML ${CMAKE_CURRENT_BINARY_DIR}/vdisk_webtool.htm)
 
         # Bootstrap: the same files and hashes as the CDN links in index.html
@@ -91,6 +92,7 @@ install(TARGETS jsmin DESTINATION .)
             COMMAND ${CMAKE_COMMAND}
                 -DSRC=${VDISK_TOOL_SRC}
                 -DDEMO=${VDISK_DEMO}
+                -DDEMO2=${VDISK_DEMO2}
                 -DJSMIN=${VDISK_JSMIN}
                 -DCSS=${CMAKE_CURRENT_BINARY_DIR}/vdisk_bootstrap.min.css
                 -DBOOTSTRAP_JS=${CMAKE_CURRENT_BINARY_DIR}/vdisk_bootstrap.min.js
@@ -100,6 +102,7 @@ install(TARGETS jsmin DESTINATION .)
                 vdiskJsminBuild
                 ${CMAKE_CURRENT_LIST_DIR}/webtool.cmake
                 ${VDISK_DEMO}
+                ${VDISK_DEMO2}
                 ${VDISK_TOOL_SRC}/index.html
                 ${VDISK_TOOL_SRC}/code.js
                 ${VDISK_TOOL_SRC}/crc.js

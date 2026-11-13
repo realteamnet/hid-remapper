@@ -969,8 +969,8 @@ const uint8_t* vdisk_configuration_descriptor(const uint8_t* base) {
     uint16_t len = base[2] | (base[3] << 8);
     const uint8_t msc[] = { TUD_MSC_DESCRIPTOR(base[4], 0, VDISK_EP_OUT, VDISK_EP_IN, 64) };
 
-    // emulated consoles keep their original descriptor
-    if ((our_descriptor->vid != 0) || (len + sizeof(msc) > sizeof(desc))) {
+    // only the two default device types get the drive; gamepad types keep their original descriptor
+    if ((our_descriptor->idx > 1) || (len + sizeof(msc) > sizeof(desc))) {
         return base;
     }
     memcpy(desc, base, len);
