@@ -10,6 +10,9 @@
 #include "out_report.h"
 #include "remapper.h"
 #include "tick.h"
+#ifdef HIDOUT_ENABLED
+#include "hidout.h"
+#endif
 
 static bool __no_inline_not_in_flash_func(manual_sof)(repeating_timer_t* rt) {
     pio_usb_host_frame();
@@ -92,6 +95,9 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
 
 void report_received_callback(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len) {
     if (len > 0) {
+#ifdef HIDOUT_ENABLED
+        hidout_report_received(dev_addr, instance, report, len);
+#endif
         handle_received_report(report, len, (uint16_t) (dev_addr << 8) | instance);
 
         reports_received = true;

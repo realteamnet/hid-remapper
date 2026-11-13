@@ -12,6 +12,8 @@
 #include "remapper.h"
 
 #define RECHECK_US 250000
+#define REPLY_WINDOW_US 2000000
+#define MAX_REPLIES 8
 #define MAX_LINES 32
 #define MAX_DATA 63
 #define MONITOR_SENT 0xFFFE0000
@@ -46,6 +48,9 @@ static uint64_t next_check = 0;
 static uint32_t logged[MAX_LINES];
 static uint32_t logged_devices = 0;
 static uint32_t logged_selected = 0;
+static uint16_t reply_interface = 0xFFFF;
+static uint64_t reply_until = 0;
+static uint8_t replies_left = 0;
 
 static uint32_t mix(uint32_t h, uint32_t v) {
     return (h ^ v) * 16777619u;
@@ -162,6 +167,9 @@ static void send_line(uint32_t n, const line_t& line, std::vector<uint16_t>& sen
         uint8_t len = (size != out_report_sizes.end()) ? std::min<uint32_t>(size->second, MAX_DATA) : line.len;
         queue_out_report(interface, line.report_id, line.data, len);
         queued.push_back(interface);
+        reply_interface = interface;
+        reply_until = get_time() + REPLY_WINDOW_US;
+        replies_left = MAX_REPLIES;
         if (monitor_enabled) {
             monitor_usage(MONITOR_SENT | n, interface, 0);
         }
@@ -238,4 +246,16 @@ void hidout_task() {
         send_line(n, lines[n], sent_to[n], fresh);
     }
     prev_selected = selected;
+}
+
+void hidout_report_received(uint8_t dev_addr, uint8_t instance, const uint8_t* report, uint16_t len) {
+    if ((replies_left == 0) || (((dev_addr << 8) | instance) != reply_interface) || (get_time() > reply_until)) {
+        return;
+    }
+    replies_left--;
+    char bytes[3 * 20 + 1] = "";
+    for (uint16_t i = 0; (i < len) && (i < 20); i++) {
+        snprintf(bytes + 3 * i, 4, " %02x", report[i]);
+    }
+    LOG("hidout: reply from interface %04x (%u bytes):%s", reply_interface, len, bytes);
 }

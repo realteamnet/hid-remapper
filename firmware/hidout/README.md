@@ -1,6 +1,6 @@
 # hidout
 
-Lets a hid-remapper config **send HID output reports to connected devices**, for example a vendor command that the device's own software would normally send. The config holds a table of messages, each with its own target devices, and an expression picks which ones are sent. The firmware has nothing device-specific in it.
+Lets a hid-remapper config **send HID output reports to the devices plugged into the remapper** (out of its USB host port, not to the computer), for example a vendor command that the device's own software would normally send. The config holds a table of messages, each with its own target devices, and an expression picks which ones are sent. The firmware has nothing device-specific in it.
 
 - **Dormant by default.** While the selector register is 0, nothing is sent. That is always the case on upstream firmware, which ignores the register and never runs the table as anything but a list of numbers, so configs that use it still load there.
 - **Optional.** `-DHIDOUT_ENABLE=OFF` leaves it out of the build.
@@ -84,7 +84,7 @@ time_sec 5 mod 0.001 lt not mul 1 store
 
 ## Debugging
 
-- **`LOG.TXT`** on the config drive (when the `vdisk` module is built in): the table (line count, malformed lines), every change of the selector, the connected interfaces with their VID:PID and output report IDs, and per line how many interfaces have the report, how many match, and where it was sent. Repeated resends with the same result are not logged again.
+- **`LOG.TXT`** on the config drive (when the `vdisk` module is built in): the table (line count, malformed lines), every change of the selector, the connected interfaces with their VID:PID and output report IDs, and per line how many interfaces have the report, how many match, and where it was sent. Repeated resends with the same result are not logged again. For 2 s after each send, up to 8 input reports from the interface it was sent to are logged too (`reply from interface ...`): a HID++ device answers with its result or an error there.
 - **Monitor tab** of the web tool (while monitoring is on): `0xFFFE00nn` = line `nn` sent (value: interface), `0xFFFE01nn` = interfaces with its report ID, `0xFFFE02nn` = interfaces that also match its targets.
 
 ## Build
@@ -101,6 +101,7 @@ time_sec 5 mod 0.001 lt not mul 1 store
 | --- | --- |
 | `firmware/CMakeLists.txt` | `include(hidout/hidout.cmake OPTIONAL)` |
 | `firmware/src/main.cc` | Inside `#ifdef HIDOUT_ENABLED`: the include, and `hidout_task()` at the end of the main loop. |
+| `firmware/src/remapper_single.cc` | Inside `#ifdef HIDOUT_ENABLED`: the include, and `hidout_report_received()` at the start of `report_received_callback()`, so replies from a device can be logged. |
 
 ## How it works
 

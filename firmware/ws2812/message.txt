@@ -1,12 +1,9 @@
-CLAUDE- vdisk: base64 web tool (106 KB), LOG.TXT; hidout: log and monitor events
+CLAUDE- hidout: log the device's reply after a send
 
-- WEBTOOL.HTM: scripts without indentation, gzip stored as base64
-  (decoded by the browser) instead of hex: 166 KB -> 106 KB.
-- vdisk: LOG.TXT on the drive (last 4 KB, vdisk_log()), remount after
-  new lines.
-- hidout: logs table, selector, interfaces and per-line sends to
-  LOG.TXT (weak link to vdisk_log), and reports 0xFFFE0xnn monitor
-  events, for debugging the K400r Fn lock.
+hidout_report_received() is called from report_received_callback()
+(gated). For 2 s after hidout sends a report to a device plugged into
+the remapper, up to 8 input reports from that interface go to LOG.TXT,
+e.g. the HID++ confirmation or error from a Logitech receiver.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd
