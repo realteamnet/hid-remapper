@@ -1,9 +1,8 @@
-CLAUDE- vdisk: fixed-size LOG.TXT, no remounts for log lines
+CLAUDE- hidout: K400r Fn lock confirmed on hardware (README)
 
-LOG.TXT always has 4096 bytes (newest lines, blank-padded), so its
-directory entry never changes and an uncached read sees new lines.
-The drive no longer remounts for the log, which opened an Explorer
-window every time. It remounts only when a config is applied.
+The receiver confirms both settings through the remapper (11 01 0F 1A
+00|01 01 ...); while the keyboard sleeps it answers HID++ error 09 and
+the 5 s resend gets through once it wakes.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd
