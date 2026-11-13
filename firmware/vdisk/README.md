@@ -7,7 +7,7 @@ Adds a small USB flash drive to HID Remapper (the `remapper` target, RP2040 and 
 | `config.json` | The current configuration, in the same JSON format as the web config tool. It is generated from the live configuration when it is read. Copy it off to make a backup. |
 | `APPLY\` | Copy a configuration `.json` file into this folder to load it. The device applies it and saves it to flash, as "Save to device" does in the web tool. |
 | `STATUS.TXT` | Result of the last file copied into `APPLY`: `OK: ...` or `ERROR: ...`. |
-| `WEBTOOL.HTM` | The web config tool as one self-contained file. Open it in Chrome or Edge; it needs no internet connection. |
+| `WEBTOOL.HTM` | The web config tool as one self-contained file. Open it in Chrome or Edge; it needs no internet connection. Its Examples list starts with the RGB LED demo (`firmware/ws2812/ws2812_example.json`). |
 | `README.TXT` | A short description of the above. |
 
 ## Using it
@@ -25,8 +25,8 @@ Adds a small USB flash drive to HID Remapper (the `remapper` target, RP2040 and 
 - Nothing else written to the drive is kept. Files outside `APPLY` are ignored.
 - The file's data must be written in ascending order in one piece. Windows, Linux and macOS do this for a normal copy.
 - The drive is not added when the device emulates a console controller (Switch, PS4, Stadia), so those keep their exact USB descriptors.
-- `WEBTOOL.HTM` is built from `config-tool-web` when the firmware is built. The build downloads Bootstrap to put it in the file; if that fails, the file keeps the CDN links and needs internet for its styling.
-- The web tool adds about 740 KB to the firmware image.
+- `WEBTOOL.HTM` is built from `config-tool-web` when the firmware is built, so it always matches the firmware. `config-tool-web` itself is not changed: the RGB LED demo is only added to the drive's copy.
+- The web tool adds about 155 KB to the firmware image. The file is a small loader holding the gzipped page; the browser unpacks it when it is opened (Chrome or Edge 80+, which WebHID needs anyway).
 
 ## Build
 
@@ -35,7 +35,7 @@ Adds a small USB flash drive to HID Remapper (the `remapper` target, RP2040 and 
 | CMake setting | Default | Meaning |
 | --- | --- | --- |
 | `VDISK_ENABLE` | `ON` | Build the drive into `remapper`. |
-| `VDISK_WEB_TOOL` | `ON` | Put the web config tool on the drive. Needs Python 3 at build time. |
+| `VDISK_WEB_TOOL` | `ON` | Put the web config tool on the drive. Needs internet access at configure time (to download Bootstrap) and the build machine's C compiler (for jsmin), which the Pico SDK already needs for pioasm. |
 
 `VDISK_EP_OUT` / `VDISK_EP_IN` (`0x04` / `0x84`) in `vdisk.h` are the bulk endpoints.
 
@@ -61,5 +61,11 @@ The build stops with an error if `src/config.cc` has a different `CONFIG_VERSION
   - The parser is a character-by-character state machine. It builds the configuration in the firmware's own persisted format, in a few small vectors.
   - When the parsed file's first cluster matches an entry in `APPLY`, `vdisk_task()` assembles the 4 KB image, adds the CRC and passes it to `load_config()`, then requests a save to flash.
   - All other writes are accepted and dropped.
-- **Web tool:** `webtool.py` joins `index.html`, the four scripts and Bootstrap into one file (module imports removed, everything inline). `vdisk.cmake` links that file into the `.flashdata` section, so it stays in flash and is read from there; it follows `STATUS.TXT` on the volume and `config.json` follows it.
+- **Web tool:** built in three steps, using only CMake and a C compiler.
+  1. At configure time `vdisk.cmake` downloads Bootstrap 5.1.3 (CSS and JS) from the same CDN URLs as `index.html` and checks them against the same SHA-384 hashes. It stops if `index.html` refers to other files.
+  2. At build time `jsmin.c` is compiled for the build machine (`ExternalProject`, the way the SDK builds pioasm).
+  3. `webtool.cmake` joins `crc.js`, `usages.js`, `examples.js` and `code.js` with their `import`/`export` lines removed, adds `ws2812_example.json` as the first example, and minifies the result with jsmin. It then strips the indentation from `index.html` and puts Bootstrap and the minified script into it inline (about 510 KB).
+  4. It gzips that page with CMake's own `file(ARCHIVE_CREATE ... FORMAT raw COMPRESSION GZip)`, reads it back as hex, and writes `WEBTOOL.HTM` as a short loader: it turns the hex back into bytes, unpacks them with the browser's `DecompressionStream`, and replaces itself with the page (`document.write`). About 155 KB. With CMake older than 3.19 the page is written unpacked.
+  `vdisk.cmake` links the file into the `.flashdata` section, so it stays in flash and is read from there; it follows `STATUS.TXT` on the volume and `config.json` follows it.
+- **jsmin:** `jsmin.c` is Douglas Crockford's JSMin (https://github.com/douglascrockford/JSMin, commit `75b6ccc`), unmodified. It removes comments and unneeded whitespace and does not rename anything. Its licence is MIT with one extra line, "The Software shall be used for Good, not Evil." Some projects (e.g. Debian) treat that as non-free; bear it in mind if this module goes upstream. `-DVDISK_WEB_TOOL=OFF` leaves jsmin and the web tool out.
 - **Reload:** after a change, test-unit-ready reports "medium not present" for 2.5 seconds, which makes the host mount the drive again.

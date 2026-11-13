@@ -11,7 +11,7 @@ if(NOT DEFINED WS2812_COLOR_REGISTER)
 endif()
 
 if(WS2812_ENABLE)
-    target_sources(remapper PRIVATE ${CMAKE_CURRENT_LIST_DIR}/ws2812_led.cc)
+    target_sources(remapper PRIVATE ${CMAKE_CURRENT_LIST_DIR}/ws2812.cc)
     pico_generate_pio_header(remapper ${CMAKE_CURRENT_LIST_DIR}/ws2812.pio)
     target_include_directories(remapper PRIVATE ${CMAKE_CURRENT_LIST_DIR})
     target_compile_definitions(remapper PRIVATE

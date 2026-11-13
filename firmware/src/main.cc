@@ -29,7 +29,7 @@
 #include "remapper.h"
 #include "tick.h"
 #ifdef WS2812_ENABLED
-#include "ws2812_led.h"
+#include "ws2812.h"
 #endif
 #ifdef VDISK_ENABLED
 #include "vdisk.h"

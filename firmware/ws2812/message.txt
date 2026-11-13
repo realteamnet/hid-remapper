@@ -1,0 +1,18 @@
+CLAUDE- ws2812 folder/file names; WEBTOOL.HTM built with jsmin + CMake gzip
+
+- firmware/rgb-led -> firmware/ws2812; ws2812_led.cc/.h -> ws2812.cc/.h;
+  ws2812_rgb_led.json -> ws2812_example.json.
+- vdisk web tool, built during make with CMake and a C compiler only
+  (webtool.py removed; config-tool-web untouched):
+  - Bootstrap downloaded at configure time, checked against the hashes
+    in index.html;
+  - jsmin.c (Crockford's JSMin, unmodified) built first for the build
+    machine via ExternalProject, like pioasm;
+  - webtool.cmake joins the scripts, puts ws2812_example.json first in
+    the examples, minifies with jsmin, inlines everything into
+    index.html, gzips it with file(ARCHIVE_CREATE) and wraps it in a
+    loader that unpacks it with DecompressionStream.
+  WEBTOOL.HTM: 736 KB -> about 155 KB.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd

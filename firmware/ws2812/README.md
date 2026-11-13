@@ -1,4 +1,4 @@
-# rgb-led
+# ws2812
 
 RGB LED support for the
 [hid-remapper](https://github.com/jfedor2/hid-remapper) RP2040/RP2350 firmware,
@@ -122,10 +122,10 @@ hardware yet.
 | File | Purpose |
 | --- | --- |
 | `ws2812.pio` | PIO program, converted line by line from the MicroPython `@rp2.asm_pio` sample, plus `ws2812_program_init()`. |
-| `ws2812_led.h` | Compile-time settings and `ws2812_led_task()`. |
-| `ws2812_led.cc` | Driver: follows registers 31 and 32. |
+| `ws2812.h` | Compile-time settings and `ws2812_led_task()`. |
+| `ws2812.cc` | Driver: follows registers 31 and 32. |
 | `ws2812.cmake` | All build logic; pulled in by one line in `firmware/CMakeLists.txt`. |
-| `ws2812_rgb_led.json` | Example config, described below. |
+| `ws2812_example.json` | Example config, described below. |
 
 ## Build settings
 
@@ -141,12 +141,12 @@ A project that needs registers 31/32 for something else can move them, e.g.
 `cmake -DWS2812_SETTINGS_REGISTER=7 -DWS2812_COLOR_REGISTER=8 ..`. Configs must
 then use the new numbers.
 
-C defines with defaults in `ws2812_led.h`: `WS2812_DEFAULT_INTENSITY` (`32`)
+C defines with defaults in `ws2812.h`: `WS2812_DEFAULT_INTENSITY` (`32`)
 and `WS2812_NUM_LEDS` (`1`; all LEDs show the same colour).
 
 ## Example config
 
-`ws2812_rgb_led.json`: import it in the web config tool, then
+`ws2812_example.json`: import it in the web config tool (the copy on the config drive, `WEBTOOL.HTM`, lists it first under Examples), then
 "Save to device". It **replaces** the current config. It is written for GPIO16
 with RGB order; change the first line of expression 1 for another board.
 
@@ -278,7 +278,7 @@ upstream.
 After the `target_link_libraries(remapper ...)` block:
 
 ```cmake
-include(rgb-led/ws2812.cmake OPTIONAL)
+include(ws2812/ws2812.cmake OPTIONAL)
 ```
 
 The included file adds the driver source, the generated `ws2812.pio.h`, the
@@ -289,7 +289,7 @@ include directory and the `WS2812_ENABLED` define to the `remapper` target.
 ```c
 #include "tick.h"
 #ifdef WS2812_ENABLED
-#include "ws2812_led.h"
+#include "ws2812.h"
 #endif
 ...
         activity_led_off_maybe();

@@ -1,4 +1,4 @@
-#include "ws2812_led.h"
+#include "ws2812.h"
 
 #include <hardware/gpio.h>
 #include <hardware/pio.h>

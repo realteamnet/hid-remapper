@@ -50,7 +50,7 @@ jobs:
           make -j$(nproc) remapper
           cd ..
           # Compile checks for the boards whose definition names an RGB LED
-          # (PICO_DEFAULT_WS2812_PIN), so the rgb-led "board LED" code is built.
+          # (PICO_DEFAULT_WS2812_PIN), so the ws2812 "board LED" code is built.
           for board in feather_host waveshare_rp2350_usb_a; do
             mkdir build-$board
             cd build-$board

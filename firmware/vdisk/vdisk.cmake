@@ -34,14 +34,72 @@ if(VDISK_ENABLE)
     )
 
     if(VDISK_WEB_TOOL)
-        find_package(Python3 REQUIRED COMPONENTS Interpreter)
         set(VDISK_TOOL_SRC ${CMAKE_CURRENT_LIST_DIR}/../../config-tool-web)
+        set(VDISK_DEMO ${CMAKE_CURRENT_LIST_DIR}/../ws2812/ws2812_example.json)
         set(VDISK_TOOL_HTML ${CMAKE_CURRENT_BINARY_DIR}/vdisk_webtool.htm)
+
+        # Bootstrap: the same files and hashes as the CDN links in index.html
+        set(VDISK_BOOTSTRAP_URL https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist)
+        set(VDISK_BOOTSTRAP_CSS_SHA384 d41984e24581abbf2262116576f2ae85f4c053a6ae53cb53f785ab1dfb630dbac2117494d68068ab297642f67a8c85b7)
+        set(VDISK_BOOTSTRAP_JS_SHA384 4091edbc6866afd5ce22923a615bad1bed9038af53f999cde24cc537546d2b7cc414422cc619665a5e7f6044afa59d77)
+        file(READ ${VDISK_TOOL_SRC}/index.html VDISK_INDEX)
+        foreach(f css/bootstrap.min.css js/bootstrap.min.js)
+            string(FIND "${VDISK_INDEX}" "${VDISK_BOOTSTRAP_URL}/${f}" found)
+            if(found EQUAL -1)
+                message(FATAL_ERROR "vdisk: config-tool-web/index.html no longer loads ${VDISK_BOOTSTRAP_URL}/${f}. Update the Bootstrap URL and hashes in vdisk.cmake, or build with -DVDISK_WEB_TOOL=OFF.")
+            endif()
+        endforeach()
+        file(DOWNLOAD ${VDISK_BOOTSTRAP_URL}/css/bootstrap.min.css ${CMAKE_CURRENT_BINARY_DIR}/vdisk_bootstrap.min.css
+            EXPECTED_HASH SHA384=${VDISK_BOOTSTRAP_CSS_SHA384})
+        file(DOWNLOAD ${VDISK_BOOTSTRAP_URL}/js/bootstrap.min.js ${CMAKE_CURRENT_BINARY_DIR}/vdisk_bootstrap.min.js
+            EXPECTED_HASH SHA384=${VDISK_BOOTSTRAP_JS_SHA384})
+
+        # jsmin.c (https://github.com/douglascrockford/JSMin, commit 75b6ccc,
+        # unmodified) is built first for the build machine, like the SDK builds
+        # pioasm, and then used below to make the web tool file.
+        include(ExternalProject)
+        set(VDISK_JSMIN_SRC ${CMAKE_CURRENT_BINARY_DIR}/vdisk_jsmin_src)
+        file(WRITE ${VDISK_JSMIN_SRC}/CMakeLists.txt
+"cmake_minimum_required(VERSION 3.13)
+project(jsmin C)
+add_executable(jsmin ${CMAKE_CURRENT_LIST_DIR}/jsmin.c)
+install(TARGETS jsmin DESTINATION .)
+")
+        set(VDISK_JSMIN_INSTALL ${CMAKE_CURRENT_BINARY_DIR}/vdisk_jsmin_install)
+        ExternalProject_Add(vdiskJsminBuild
+            PREFIX vdisk_jsmin
+            SOURCE_DIR ${VDISK_JSMIN_SRC}
+            BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/vdisk_jsmin
+            INSTALL_DIR ${VDISK_JSMIN_INSTALL}
+            CMAKE_ARGS
+                "--no-warn-unused-cli"
+                "-DCMAKE_MAKE_PROGRAM:FILEPATH=${CMAKE_MAKE_PROGRAM}"
+                "-DCMAKE_INSTALL_PREFIX=${VDISK_JSMIN_INSTALL}"
+                "-DCMAKE_RULE_MESSAGES=OFF"
+                "-DCMAKE_INSTALL_MESSAGE=NEVER"
+            BUILD_BYPRODUCTS ${VDISK_JSMIN_INSTALL}/jsmin${CMAKE_HOST_EXECUTABLE_SUFFIX}
+            BUILD_ALWAYS 1
+        )
+        if(CMAKE_HOST_WIN32)
+            set(VDISK_JSMIN ${VDISK_JSMIN_INSTALL}/jsmin.exe)
+        else()
+            set(VDISK_JSMIN ${VDISK_JSMIN_INSTALL}/jsmin)
+        endif()
+
         add_custom_command(
             OUTPUT ${VDISK_TOOL_HTML}
-            COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/webtool.py ${VDISK_TOOL_SRC} ${VDISK_TOOL_HTML}
+            COMMAND ${CMAKE_COMMAND}
+                -DSRC=${VDISK_TOOL_SRC}
+                -DDEMO=${VDISK_DEMO}
+                -DJSMIN=${VDISK_JSMIN}
+                -DCSS=${CMAKE_CURRENT_BINARY_DIR}/vdisk_bootstrap.min.css
+                -DBOOTSTRAP_JS=${CMAKE_CURRENT_BINARY_DIR}/vdisk_bootstrap.min.js
+                -DOUT=${VDISK_TOOL_HTML}
+                -P ${CMAKE_CURRENT_LIST_DIR}/webtool.cmake
             DEPENDS
-                ${CMAKE_CURRENT_LIST_DIR}/webtool.py
+                vdiskJsminBuild
+                ${CMAKE_CURRENT_LIST_DIR}/webtool.cmake
+                ${VDISK_DEMO}
                 ${VDISK_TOOL_SRC}/index.html
                 ${VDISK_TOOL_SRC}/code.js
                 ${VDISK_TOOL_SRC}/crc.js
