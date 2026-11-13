@@ -1,0 +1,80 @@
+name: build
+# Builds on the owner's self-hosted WSL runner (label wsl-build) and falls back to a
+# GitHub-hosted runner when that runner is offline or its build fails.
+# - The watch job waits up to 3 minutes for the self-hosted job to start. If it doesn't,
+#   the runner is remembered as offline (in the Actions cache) and the next runs wait only
+#   20 seconds, until a run sees the runner again.
+# - A self-hosted job that starts after the wait skips itself (build-rp2040.yml max_wait),
+#   so a runner coming back online never publishes an older build over the fallback's.
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'firmware/**'
+      - '.github/workflows/*.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  local:
+    uses: ./.github/workflows/build-rp2040.yml
+    with:
+      runner: '["self-hosted", "wsl-build"]'
+      max_wait: 240
+  watch:
+    runs-on: ubuntu-latest
+    outputs:
+      fallback: ${{ steps.wait.outputs.fallback }}
+    steps:
+      - uses: actions/cache/restore@v4
+        with:
+          path: runner-state
+          key: wsl-runner-state-${{ github.run_id }}
+          restore-keys: wsl-runner-state-
+      - id: wait
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          state=$(cat runner-state 2>/dev/null || echo online)
+          limit=$([ "$state" = offline ] && echo 20 || echo 180)
+          echo "last known runner state: $state; waiting up to ${limit}s for it to start"
+          jobs_url="$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs"
+          start=$(date +%s)
+          fallback=true
+          state=offline
+          while :; do
+            job=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" "$jobs_url" | jq -c '[.jobs[] | select(.name | startswith("local"))][0]')
+            status=$(echo "$job" | jq -r '.status // "queued"')
+            if [ "$status" = completed ]; then
+              conclusion=$(echo "$job" | jq -r .conclusion)
+              echo "self-hosted build finished: $conclusion"
+              state=online
+              [ "$conclusion" = success ] && fallback=false
+              break
+            fi
+            if [ "$status" = in_progress ]; then
+              state=online
+              limit=$(( $(date +%s) - start + 3600 ))
+            fi
+            if [ $(( $(date +%s) - start )) -ge "$limit" ]; then
+              echo "self-hosted runner did not start within the wait: using the GitHub runner"
+              break
+            fi
+            sleep 10
+          done
+          echo "$state" > runner-state
+          echo "fallback=$fallback" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: runner-state
+          key: wsl-runner-state-${{ github.run_id }}
+  github:
+    needs: watch
+    if: needs.watch.outputs.fallback == 'true'
+    uses: ./.github/workflows/build-rp2040.yml

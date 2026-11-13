@@ -73,6 +73,7 @@ if(VDISK_ENABLE)
                 -P ${CMAKE_CURRENT_LIST_DIR}/webtool.cmake
             DEPENDS
                 ${CMAKE_CURRENT_LIST_DIR}/webtool.cmake
+                ${CMAKE_CURRENT_LIST_DIR}/highlight.js
                 ${VDISK_DEMO}
                 ${VDISK_DEMO2}
                 ${VDISK_TOOL_SRC}/index.html

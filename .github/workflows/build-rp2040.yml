@@ -1,14 +1,18 @@
 name: build-rp2040
 on:
-  push:
-    paths:
-      - 'firmware/**'
-      - '.github/workflows/*.yml'
   workflow_call:
     inputs:
       ref:
         type: string
         default: ''
+      runner:
+        description: runs-on value as JSON
+        type: string
+        default: '"ubuntu-22.04"'
+      max_wait:
+        description: skip (successfully) if the job starts more than this many seconds after the run started
+        type: number
+        default: 0
 defaults:
   run:
     shell: bash --noprofile --norc -x -e -o pipefail {0}
@@ -16,28 +20,46 @@ permissions:
   contents: write
 jobs:
   build:
-    runs-on: ubuntu-22.04
-    # ccache and parallel make; CMake and make pick these up, so the build steps stay as upstream's
+    runs-on: ${{ fromJSON(inputs.runner) }}
+    # ccache for CMake; the build steps stay as upstream's
     env:
       CMAKE_C_COMPILER_LAUNCHER: ccache
       CMAKE_CXX_COMPILER_LAUNCHER: ccache
-      MAKEFLAGS: -j4
     steps:
+      # A self-hosted job that starts late (runner was offline, the GitHub fallback built it) or for a
+      # commit that is no longer the branch head does nothing.
+      - name: Gate
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          go=true
+          if [ "${{ inputs.max_wait }}" -gt 0 ]; then
+            started=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" | jq -r .run_started_at)
+            age=$(( $(date +%s) - $(date -d "$started" +%s) ))
+            [ "$age" -le "${{ inputs.max_wait }}" ] || { echo "started ${age}s after the run: the fallback build covers it"; go=false; }
+          fi
+          echo "go=$go" >> "$GITHUB_OUTPUT"
+          echo "MAKEFLAGS=-j$(nproc)" >> "$GITHUB_ENV"
       - uses: actions/checkout@v6
+        if: steps.gate.outputs.go == 'true'
         with:
           submodules: true
           # sync-upstream.yml passes the branch it just merged into
           ref: ${{ inputs.ref }}
       - uses: actions/cache@v4
+        if: steps.gate.outputs.go == 'true' && runner.environment == 'github-hosted'
         with:
           path: ~/.cache/ccache
           key: ccache-${{ github.sha }}
           restore-keys: ccache-
       - name: Install compiler, libraries and tools
+        if: steps.gate.outputs.go == 'true' && runner.environment == 'github-hosted'
         run: |
           sudo apt update
           sudo apt install -y --no-install-recommends gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib srecord ccache
       - name: Build
+        if: steps.gate.outputs.go == 'true'
         run: |
           mkdir build
           cd build
@@ -124,9 +146,11 @@ jobs:
           mv build-rp2040abb/remapper.uf2 artifacts/remapper_rp2040abb.uf2
         working-directory: ./firmware
       - uses: actions/upload-artifact@v7
+        if: steps.gate.outputs.go == 'true'
         with:
           path: firmware/artifacts/*
       - name: Upload firmware to the latest release
+        if: steps.gate.outputs.go == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
