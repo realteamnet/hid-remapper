@@ -40,6 +40,9 @@ string(REGEX MATCH "(^|\n)(import|export) " leftover "${app_js}")
 if(leftover)
     message(FATAL_ERROR "webtool.cmake: an import or export is left in the joined scripts")
 endif()
+# indentation and blank lines only; the scripts have no multi-line strings
+string(REGEX REPLACE "\n[ \t]+" "\n" app_js "${app_js}")
+string(REGEX REPLACE "\n\n+" "\n" app_js "${app_js}")
 
 file(READ ${CSS} css)
 file(READ ${BOOTSTRAP_JS} bootstrap_js)
@@ -78,20 +81,65 @@ if(CMAKE_VERSION VERSION_LESS 3.19)
     return()
 endif()
 
+# CMake reads binary files only as hex; regroup it into base64 (3 bytes -> 4 characters)
+function(base64_from_hex hex var)
+    set(abc "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/")
+    string(LENGTH "${hex}" n)
+    math(EXPR full "${n} / 6 * 6")
+    string(SUBSTRING "${hex}" 0 ${full} body)
+    string(SUBSTRING "${hex}" ${full} -1 tail)
+    string(REGEX MATCHALL "......" groups "${body}")
+    set(result "")
+    set(chunk "")
+    set(i 0)
+    foreach(g IN LISTS groups)
+        math(EXPR v "0x${g}")
+        foreach(shift 18 12 6 0)
+            math(EXPR k "(${v} >> ${shift}) & 63")
+            string(SUBSTRING "${abc}" ${k} 1 c)
+            string(APPEND chunk "${c}")
+        endforeach()
+        math(EXPR i "${i} + 1")
+        if(i EQUAL 1000)
+            string(APPEND result "${chunk}")
+            set(chunk "")
+            set(i 0)
+        endif()
+    endforeach()
+    string(APPEND result "${chunk}")
+    string(LENGTH "${tail}" t)
+    if(t GREATER 0)
+        if(t EQUAL 2)
+            math(EXPR v "0x${tail}0000")
+            set(shifts 18 12)
+            set(pad "==")
+        else()
+            math(EXPR v "0x${tail}00")
+            set(shifts 18 12 6)
+            set(pad "=")
+        endif()
+        foreach(shift IN LISTS shifts)
+            math(EXPR k "(${v} >> ${shift}) & 63")
+            string(SUBSTRING "${abc}" ${k} 1 c)
+            string(APPEND result "${c}")
+        endforeach()
+        string(APPEND result "${pad}")
+    endif()
+    set(${var} "${result}" PARENT_SCOPE)
+endfunction()
+
 # Gzip the page and wrap it in a loader that unpacks it with the browser's
-# DecompressionStream and shows it.
+# base64 decoder and DecompressionStream, then shows it.
 file(WRITE ${OUT}.page.htm "${html}")
 file(ARCHIVE_CREATE OUTPUT ${OUT}.page.htm.gz PATHS ${OUT}.page.htm FORMAT raw COMPRESSION GZip COMPRESSION_LEVEL 9)
 file(READ ${OUT}.page.htm.gz packed HEX)
+base64_from_hex("${packed}" packed)
 file(WRITE ${OUT} "<!doctype html>
 <html><head><meta charset=\"utf-8\"><title>HID Remapper Configuration</title></head><body>
 <script>
 (async () => {
-    const hex = \"${packed}\";
-    const bytes = new Uint8Array(hex.length / 2);
-    for (let i = 0; i < bytes.length; i++) {
-        bytes[i] = parseInt(hex.slice(2 * i, 2 * i + 2), 16);
-    }
+    const b64 = \"${packed}\";
+    const bytes = Uint8Array.fromBase64 ? Uint8Array.fromBase64(b64) : Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
     const page = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
     document.open();
     document.write(page);

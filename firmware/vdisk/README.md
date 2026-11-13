@@ -8,6 +8,7 @@ Adds a small USB flash drive to HID Remapper (the `remapper` target, RP2040 and 
 | `APPLY\` | Copy a configuration `.json` file into this folder to load it. The device applies it and saves it to flash, as "Save to device" does in the web tool. |
 | `STATUS.TXT` | Result of the last file copied into `APPLY`: `OK: ...` or `ERROR: ...`. |
 | `WEBTOOL.HTM` | The web config tool as one self-contained file. Open it in Chrome or Edge; it needs no internet connection. Its Examples list starts with the RGB LED demo (`firmware/ws2812/ws2812_example.json`) and the Logitech K400 Fn lock example (`firmware/hidout/hidout_example.json`). |
+| `LOG.TXT` | Debug log, the last 4 KB (e.g. from the `hidout` module). The drive remounts about 2 s after new lines so the host sees them. |
 | `README.TXT` | A short description of the above. |
 
 ## Using it
@@ -26,7 +27,7 @@ Adds a small USB flash drive to HID Remapper (the `remapper` target, RP2040 and 
 - The file's data must be written in ascending order in one piece. Windows, Linux and macOS do this for a normal copy.
 - The drive is only added for the two default device types (mouse and keyboard, absolute mouse and keyboard). The gamepad types (Switch, PS4, Stadia, XAC/Flex) keep their exact USB descriptors.
 - `WEBTOOL.HTM` is built from `config-tool-web` when the firmware is built, so it always matches the firmware. `config-tool-web` itself is not changed: the RGB LED demo is only added to the drive's copy.
-- The web tool adds about 165 KB to the firmware image. The file is a small loader holding the gzipped page; the browser unpacks it when it is opened (Chrome or Edge 80+, which WebHID needs anyway).
+- The web tool adds about 106 KB to the firmware image. The file is a small loader holding the gzipped page; the browser unpacks it when it is opened (Chrome or Edge 80+, which WebHID needs anyway).
 
 ## Build
 
@@ -64,7 +65,7 @@ The build stops with an error if `src/config.cc` has a different `CONFIG_VERSION
 - **Web tool:** built with CMake only.
   1. At configure time `vdisk.cmake` downloads Bootstrap 5.1.3 (CSS and JS) from the same CDN URLs as `index.html` and checks them against the same SHA-384 hashes. It stops if `index.html` refers to other files.
   2. `webtool.cmake` joins `crc.js`, `usages.js`, `examples.js` and `code.js` with their `import`/`export` lines removed, adds the two example configs as the first examples. It then strips the indentation from `index.html` and puts Bootstrap and the minified script into it inline (about 740 KB).
-  3. It gzips that page with CMake's own `file(ARCHIVE_CREATE ... FORMAT raw COMPRESSION GZip)`, reads it back as hex, and writes `WEBTOOL.HTM` as a short loader: it turns the hex back into bytes, unpacks them with the browser's `DecompressionStream`, and replaces itself with the page (`document.write`). About 165 KB. With CMake older than 3.19 the page is written unpacked.
+  3. It strips indentation and blank lines from the joined scripts, gzips the page with CMake's own `file(ARCHIVE_CREATE ... FORMAT raw COMPRESSION GZip)`, encodes the result as base64 (in CMake, from the hex it reads), and writes `WEBTOOL.HTM` as a short loader that decodes it with the browser's own base64 decoder and `DecompressionStream` and replaces itself with the page. About 106 KB (the page itself is about 540 KB). With CMake older than 3.19 the page is written unpacked.
   `vdisk.cmake` links the file into the `.flashdata` section, so it stays in flash and is read from there; it follows `STATUS.TXT` on the volume and `config.json` follows it.
 - The scripts are not minified: gzip removes almost the same redundancy (minifying first would save about 10 KB of the final file).
 - **Reload:** after a change, test-unit-ready reports "medium not present" for 2.5 seconds, which makes the host mount the drive again.

@@ -39,7 +39,8 @@ extern const uint8_t vdisk_tool_end[];
 #define APPLY_CLUSTER 2
 #define README_CLUSTER 3
 #define STATUS_CLUSTER 4
-#define TOOL_CLUSTER 5
+#define LOG_CLUSTER 5
+#define TOOL_CLUSTER 6
 #define JSON_CLUSTER (TOOL_CLUSTER + (TOOL_SIZE + CLUSTER - 1) / CLUSTER)
 
 #define VOLUME_LABEL "HIDREMAPPER"
@@ -47,6 +48,8 @@ extern const uint8_t vdisk_tool_end[];
 #define JSON_SHORT_NAME "CONFIG~1JSO"
 
 #define QUIET_US 1500000
+#define LOG_SIZE CLUSTER
+#define LOG_REMOUNT_US 2000000
 #define EJECT_US 2500000
 
 // same bits as in config.cc
@@ -65,6 +68,7 @@ static const char readme[] =
     "APPLY        Copy a configuration .json file into this folder to load it\r\n"
     "             and save it on the device.\r\n"
     "STATUS.TXT   Result of the last file copied into APPLY.\r\n"
+    "LOG.TXT      Debug log (the last 4 KB), e.g. from the hidout module.\r\n"
 #ifdef VDISK_WEB_TOOL
     "WEBTOOL.HTM  The configuration tool. Open it in Chrome or Edge.\r\n"
 #endif
@@ -189,6 +193,10 @@ static bool apply_pending = false;
 static bool changed = false;
 static bool host_ejected = false;
 static uint64_t last_write = 0;
+static char log_buf[LOG_SIZE];
+static uint32_t log_total = 0;
+static bool log_new = false;
+static uint64_t last_log = 0;
 static uint64_t eject_until = 0;
 
 static uint8_t* out_buf;
@@ -391,6 +399,33 @@ static void text_sector(const char* text, uint32_t offset, uint8_t* buf) {
     }
 }
 
+static uint32_t log_size() {
+    return (log_total < LOG_SIZE) ? log_total : LOG_SIZE;
+}
+
+static void log_sector(uint32_t offset, uint8_t* buf) {
+    uint32_t start = log_total - log_size();
+    for (uint32_t i = 0; (i < SECTOR) && (offset + i < log_size()); i++) {
+        buf[i] = log_buf[(start + offset + i) % LOG_SIZE];
+    }
+}
+
+void vdisk_log(const char* fmt, ...) {
+    char line[200];
+    uint64_t now = get_time();
+    int n = snprintf(line, sizeof(line), "%lu.%03lu ", (unsigned long) (now / 1000000), (unsigned long) (now / 1000 % 1000));
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(line + n, sizeof(line) - n - 2, fmt, args);
+    va_end(args);
+    strcat(line, "\r\n");
+    for (const char* c = line; *c; c++) {
+        log_buf[log_total++ % LOG_SIZE] = *c;
+    }
+    log_new = true;
+    last_log = now;
+}
+
 static void read_sector(uint32_t lba, uint8_t* buf) {
     static const uint8_t boot[] = {
         0xEB, 0x3C, 0x90, 'M', 'S', 'D', 'O', 'S', '5', '.', '0',
@@ -419,6 +454,7 @@ static void read_sector(uint32_t lba, uint8_t* buf) {
         if (TOOL_SIZE > 0) {
             dir_entry(buf + 192, "WEBTOOL HTM", 0x20, TOOL_CLUSTER, TOOL_SIZE);
         }
+        dir_entry(buf + 224, "LOG     TXT", 0x20, LOG_CLUSTER, log_size());
     } else if (lba >= DATA_LBA) {
         uint32_t cluster = 2 + (lba - DATA_LBA) / SECTORS_PER_CLUSTER;
         uint32_t offset = (lba - DATA_LBA) % SECTORS_PER_CLUSTER * SECTOR;
@@ -431,6 +467,8 @@ static void read_sector(uint32_t lba, uint8_t* buf) {
             text_sector(readme, offset, buf);
         } else if (cluster == STATUS_CLUSTER) {
             text_sector(status, offset, buf);
+        } else if (cluster == LOG_CLUSTER) {
+            log_sector(offset, buf);
 #ifdef VDISK_WEB_TOOL
         } else if (cluster < JSON_CLUSTER) {
             uint32_t pos = (cluster - TOOL_CLUSTER) * CLUSTER + offset;
@@ -937,6 +975,7 @@ static void apply() {
     config_updated = true;
     need_to_persist_config = true;
     set_status("OK: ", "configuration loaded and saved.");
+    vdisk_log("vdisk: configuration from APPLY loaded and saved");
 }
 
 void vdisk_task() {
@@ -950,6 +989,11 @@ void vdisk_task() {
     uint64_t now = get_time();
     if (now - last_write <= QUIET_US) {
         return;
+    }
+    // new log lines: let the host see them once logging has paused
+    if (log_new && (now - last_log > LOG_REMOUNT_US)) {
+        log_new = false;
+        changed = true;
     }
     if (!changed && (dropped[0].cluster != 0)) {
         set_status("ERROR: ", (im.state == FAILED) ? im.error : "file is not a configuration");

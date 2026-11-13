@@ -14,6 +14,8 @@
 #define VDISK_CONFIG_VERSION 18
 
 void vdisk_task();
+// appends a line to LOG.TXT on the drive (the last 4 KB are kept)
+void vdisk_log(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 const uint8_t* vdisk_configuration_descriptor(const uint8_t* base);
 
 #endif

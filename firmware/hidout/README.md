@@ -82,6 +82,11 @@ time_sec 5 mod 0.001 lt not mul 1 store
 - **Other slots or models:** if the keyboard is in another receiver slot, change the second byte (`01`). For another model, the index and slot can be read from the keyboard with a HID++ root lookup (`10 <slot> 00 0A 40 A0 00` → reply byte 4 is the index).
 - **Two receivers of the same type** (e.g. a second Unifying receiver with mice) both match `0x046DC52B`. The command then also reaches slot 1 of the other receiver, which would run function 1 of whatever feature that device has at the same index. Plug only the keyboard's receiver into the remapper, or make sure slot 1 of the other receiver is not affected.
 
+## Debugging
+
+- **`LOG.TXT`** on the config drive (when the `vdisk` module is built in): the table (line count, malformed lines), every change of the selector, the connected interfaces with their VID:PID and output report IDs, and per line how many interfaces have the report, how many match, and where it was sent. Repeated resends with the same result are not logged again.
+- **Monitor tab** of the web tool (while monitoring is on): `0xFFFE00nn` = line `nn` sent (value: interface), `0xFFFE01nn` = interfaces with its report ID, `0xFFFE02nn` = interfaces that also match its targets.
+
 ## Build
 
 | CMake setting | Default | Meaning |
