@@ -49,8 +49,6 @@ extern const uint8_t vdisk_tool_end[];
 
 #define QUIET_US 1500000
 #define LOG_SIZE CLUSTER
-#define LOG_REMOUNT_US 2000000
-#define LOG_REMOUNT_GAP_US 30000000
 #define EJECT_US 2500000
 
 // same bits as in config.cc
@@ -196,9 +194,6 @@ static bool host_ejected = false;
 static uint64_t last_write = 0;
 static char log_buf[LOG_SIZE];
 static uint32_t log_total = 0;
-static bool log_new = false;
-static uint64_t last_log = 0;
-static uint64_t last_log_remount = 0;
 static uint64_t eject_until = 0;
 
 static uint8_t* out_buf;
@@ -401,14 +396,13 @@ static void text_sector(const char* text, uint32_t offset, uint8_t* buf) {
     }
 }
 
-static uint32_t log_size() {
-    return (log_total < LOG_SIZE) ? log_total : LOG_SIZE;
-}
-
+// LOG.TXT always has LOG_SIZE bytes (newest lines first, blank-padded), so its directory
+// entry never changes and an uncached read sees new lines without a remount.
 static void log_sector(uint32_t offset, uint8_t* buf) {
-    uint32_t start = log_total - log_size();
-    for (uint32_t i = 0; (i < SECTOR) && (offset + i < log_size()); i++) {
-        buf[i] = log_buf[(start + offset + i) % LOG_SIZE];
+    uint32_t used = (log_total < LOG_SIZE) ? log_total : LOG_SIZE;
+    for (uint32_t i = 0; i < SECTOR; i++) {
+        uint32_t pos = offset + i;
+        buf[i] = (pos < used) ? log_buf[(log_total - used + pos) % LOG_SIZE] : ' ';
     }
 }
 
@@ -424,8 +418,6 @@ void vdisk_log(const char* fmt, ...) {
     for (const char* c = line; *c; c++) {
         log_buf[log_total++ % LOG_SIZE] = *c;
     }
-    log_new = true;
-    last_log = now;
 }
 
 static void read_sector(uint32_t lba, uint8_t* buf) {
@@ -456,7 +448,7 @@ static void read_sector(uint32_t lba, uint8_t* buf) {
         if (TOOL_SIZE > 0) {
             dir_entry(buf + 192, "WEBTOOL HTM", 0x20, TOOL_CLUSTER, TOOL_SIZE);
         }
-        dir_entry(buf + 224, "LOG     TXT", 0x20, LOG_CLUSTER, log_size());
+        dir_entry(buf + 224, "LOG     TXT", 0x20, LOG_CLUSTER, LOG_SIZE);
     } else if (lba >= DATA_LBA) {
         uint32_t cluster = 2 + (lba - DATA_LBA) / SECTORS_PER_CLUSTER;
         uint32_t offset = (lba - DATA_LBA) % SECTORS_PER_CLUSTER * SECTOR;
@@ -991,12 +983,6 @@ void vdisk_task() {
     uint64_t now = get_time();
     if (now - last_write <= QUIET_US) {
         return;
-    }
-    // new log lines: let the host see them once logging has paused
-    if (log_new && (now - last_log > LOG_REMOUNT_US) && (now - last_log_remount > LOG_REMOUNT_GAP_US)) {
-        log_new = false;
-        last_log_remount = now;
-        changed = true;
     }
     if (!changed && (dropped[0].cluster != 0)) {
         set_status("ERROR: ", (im.state == FAILED) ? im.error : "file is not a configuration");

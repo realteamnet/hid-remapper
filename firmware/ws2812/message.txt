@@ -1,8 +1,9 @@
-CLAUDE- vdisk/hidout: stop remounting the drive every few seconds
+CLAUDE- vdisk: fixed-size LOG.TXT, no remounts for log lines
 
-- hidout: log a device reply only when it differs from the last one
-  (the K400 example resends every 5 s and gets the same answer).
-- vdisk: remount for new LOG.TXT lines at most every 30 s.
+LOG.TXT always has 4096 bytes (newest lines, blank-padded), so its
+directory entry never changes and an uncached read sees new lines.
+The drive no longer remounts for the log, which opened an Explorer
+window every time. It remounts only when a config is applied.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd

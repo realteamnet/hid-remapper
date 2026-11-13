@@ -8,7 +8,7 @@ Adds a small USB flash drive to HID Remapper (the `remapper` target, RP2040 and 
 | `APPLY\` | Copy a configuration `.json` file into this folder to load it. The device applies it and saves it to flash, as "Save to device" does in the web tool. |
 | `STATUS.TXT` | Result of the last file copied into `APPLY`: `OK: ...` or `ERROR: ...`. |
 | `WEBTOOL.HTM` | The web config tool as one self-contained file. Open it in Chrome or Edge; it needs no internet connection. Its Examples list starts with the RGB LED demo (`firmware/ws2812/ws2812_example.json`) and the Logitech K400 Fn lock example (`firmware/hidout/hidout_example.json`). |
-| `LOG.TXT` | Debug log, the last 4 KB (e.g. from the `hidout` module). The drive remounts about 2 s after new lines so the host sees them. |
+| `LOG.TXT` | Debug log, the last 4 KB (e.g. from the `hidout` module). Always exactly 4096 bytes (blank-padded), so the drive never remounts for it; read it uncached (e.g. `FILE_FLAG_NO_BUFFERING`) to see new lines, because a normal read may return Windows' cached copy. |
 | `README.TXT` | A short description of the above. |
 
 ## Using it
