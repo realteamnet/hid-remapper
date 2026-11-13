@@ -1,16 +1,7 @@
-CLAUDE- hidout: send a HID output report from an expression; K400 Fn lock example
+CLAUDE- ws2812 example: power-on colour 0x20FFFFFF
 
-- New optional module firmware/hidout: registers 1-2 hold the report
-  bytes (report ID first, 0 = idle), registers 3-5 a target array of
-  0xVVVV (any product of a vendor) or 0xVVVVPPPP entries; all 0 = any
-  device. Sent once per change, and again when a matching device
-  reappears. Gated edits: include line in CMakeLists.txt, include and
-  hidout_task() in main.cc.
-- hidout_example.json: Logitech K400 Fn lock toggled by Fn+Esc
-  (reported as Power), with Power mapped to Nothing. The same is added
-  to ws2812_example.json as expression 6.
-- vdisk: the web tool lists both examples first; the drive is added
-  only for device types 0 and 1 (was: any type without its own VID).
+The example's power-on colour (expression 1, line 2) is now white at
+intensity 0x20 instead of blue; README updated.
 
 Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd
