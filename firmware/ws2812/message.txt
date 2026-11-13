@@ -1,7 +1,21 @@
-CLAUDE-Config drive: drop the icon from autorun.inf
+CLAUDE-hidout watch lines: resend on reconnect; full upstream CI build
 
-Windows did not show an icon from a system DLL (joy.cpl) for the
-removable drive; autorun.inf now only sets label=HID-REMAPPER.
+hidout:
+- Watch lines in the table: 0 <pattern length> <pattern words> <targets>.
+  An input report from a target that starts with the pattern sends the
+  selected lines again. Not numbered, no register used.
+- K400 example: logic in expression 1, table in expression 2. Line 2 turns
+  on the Unifying receiver's wireless notifications (HID++ 1.0 register
+  0x00); the watch line 10 01 41 (slot 1 connected) resends the Fn lock.
+  The 5 s periodic resend is removed. Comments explain every byte, register
+  and the Power mapping.
+
+ws2812 example: comments document register 31/32 fields, the power-on
+colour and every register the example uses.
+
+CI: build-rp2040.yml uses upstream's build steps unchanged (all boards and
+variants) again; only additions remain: ccache via CMake launcher env,
+MAKEFLAGS -j4, actions/cache, ref input and the latest-release upload.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd

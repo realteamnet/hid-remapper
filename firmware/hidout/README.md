@@ -7,7 +7,7 @@ Lets a hid-remapper config **send HID output reports to the devices plugged into
 
 ## The table
 
-Table lines are the expression lines (ended by a line break) that hold **only numbers**, in any expression. They can sit next to the logic in the same expression. Each one is one message:
+Table lines are the expression lines (ended by a line break) that hold **only numbers**, in any expression. They can sit next to the logic in the same expression. There are two kinds: **send lines** (a message to send) and **watch lines** (a report to watch for). A send line:
 
 ```
 <length> <report words...> <targets...>
@@ -19,10 +19,23 @@ Table lines are the expression lines (ended by a line break) that hold **only nu
 | `<report words>` | The report as 32-bit hex words, first byte first, **report ID first**: `10 01 0F 1A 00 00 00` is written `0x10010F1A 0x00000000`. As many words as the length needs (`7` → 2 words); unused bytes of the last word are ignored. |
 | `<targets>` | Any number of devices, any mix of: `0xVVVV` = every product of vendor VVVV; `0xVVVVPPPP` = exactly that VID:PID. **No targets = any device** that declares an output report with that report ID. |
 
-- **Line numbers** count table lines only, from 0, starting in expression 1 and continuing through expression 8. Comment-only lines and lines with any operation (`store`, `recall`, ...) don't count, so each message can have a comment line above it, and a line commented out with `/* */` is not a table line.
+- **Line numbers** count send lines only, from 0, starting in expression 1 and continuing through expression 8. Watch lines have no number. Comment-only lines and lines with any operation (`store`, `recall`, ...) don't count, so each message can have a comment line above it, and a line commented out with `/* */` is not a table line.
 - **Comments** are not stored on the device, so a config read back from the device shows the table without them.
 - **Malformed lines** (too few words for the length, a length below 2, or report ID 0) keep their line number but are never sent.
 - **Evaluation:** hid-remapper also evaluates the table lines as part of their expression, so each line's values are pushed and stay on the stack. Keep the expression within the 16-deep stack (a 7-byte line with one target pushes 4 values). If it overflows, hid-remapper skips the whole expression, including any logic in it; `hidout` still reads the table directly.
+
+## Watch lines
+
+```
+0 <pattern length> <pattern words...> <targets...>
+```
+
+A leading `0` marks a watch line. When an input report from a target device **starts with the pattern** (report ID first, packed into 32-bit words like a send line, at most 16 bytes), every selected send line is sent again right away. Use it for devices that forget a setting when they reconnect: watch for the device's "connected" message instead of resending on a timer.
+
+- **Targets** work as for send lines; no targets = any device.
+- **No register** is used, and it does nothing while the selector is 0.
+- **Malformed watch lines** (pattern length 0 or over 16, too few words) are ignored.
+- Watch lines are checked against every input report the remapper receives, so keep the pattern specific (report ID and the first bytes that identify the message).
 
 ## The selector register
 
@@ -31,7 +44,7 @@ Table lines are the expression lines (ended by a line break) that hold **only nu
 - **A line is sent** to each matching device when its bit turns on.
 - **It is sent again** when a matching device appears later (e.g. the receiver is plugged back in; checked 4 times a second), and when the table is edited.
 - **It is not sent on every tick**, so writing the register every tick is fine.
-- **Forcing a resend:** writing 0 for one tick and then the bits again sends the selected lines again. Use this for devices that forget a setting when they are switched off.
+- **Forcing a resend:** a watch line (above), or writing 0 for one tick and then the bits again.
 - **Length sent:** the report goes out with the length the device declares for that report ID (padded with zeros, or cut at 63 bytes after the ID). If the device doesn't declare it, the length from the table is used.
 - **Report types:** only output reports (HID SET_REPORT, type Output); feature reports are not sent.
 - **Not supported:** reading replies. If a command needs a value the device reports first, this module can't do it.
@@ -44,33 +57,41 @@ The K400's Fn lock (F1-F12 or media keys first) is normally switched by Logitech
 
 | Model | Feature index | F-keys first | Media keys first | Source |
 | --- | --- | --- | --- | --- |
-| K400r (and K400) | `0F` | `10 01 0F 1A 00 00 00` | `10 01 0F 1A 01 00 00` | Read from a K400r (wireless PID `4024`) and confirmed on it, 2026-11-13. Then confirmed through the remapper with this example: the receiver answers `11 01 0F 1A 00 01 ...` / `... 01 01 ...`. While the keyboard sleeps it answers `10 01 8F 0F 1A 09 00` (HID++ error 09); the 5 s resend gets through once it wakes. The original K400 shares that wireless PID family; assumed the same, not tested. |
+| K400r (and K400) | `0F` | `10 01 0F 1A 00 00 00` | `10 01 0F 1A 01 00 00` | Read from a K400r (wireless PID `4024`) and confirmed on it, 2026-11-13. Then confirmed through the remapper with this example: the receiver answers `11 01 0F 1A 00 01 ...` / `... 01 01 ...`. While the keyboard is off the receiver answers `10 01 8F 0F 1A 09 00` (HID++ error 09). The original K400 shares that wireless PID family; assumed the same, not tested. |
 | K400 Plus | `09` | `10 01 09 19 00 00 00` | `10 01 09 18 01 00 00` | From github.com/h8man/k400p-fn-lock-win and github.com/sginne/fn_key_k400_for_logitech; not tested here. |
 
 `01` is the keyboard's slot on its receiver. The receiver is the same (`C52B`) for all models, so the firmware can't tell which model is behind it. The config says so.
 
-Everything is in expression 1, the table and the logic:
+Expression 1, the logic (registers: 1 = selector, 6 = Fn lock state 1 or 2):
 ```
-/* line 0: K400 / K400r, F-keys first (FN_INVERSION at index 0F, confirmed on a K400r) */
+/* Fn lock at boot: 0x1 = F-keys first, 0x2 = media keys first (register 6 starts at 0, so this only runs once) */
+6 recall 0 eq 0x1 6 recall ifte 6 store
+/* Fn+Esc (reported as Power) toggles it: on the press edge, 6 = 3 - 6, so 1 <-> 2 */
+0x00070066 input_state_binary 0x00070066 prev_input_state_binary not mul
+0x3 6 recall sub 6 recall ifte 6 store
+/* selector: line 0 (0x1) or line 1 (0x2) for the state, plus line 2 (0x4) to turn on the receiver notifications */
+6 recall 0x1 eq 0x1 0x2 ifte 0x4 bitwise_or 1 store
+```
+
+Expression 2, the table:
+```
+/* line 0: K400 / K400r F-keys first: 10 = HID++ short report, 01 = keyboard slot, 0F = FN_INVERSION index, 1A = function 1 (set) + software ID A, 00 = F-keys first */
 7 0x10010F1A 0x00000000 0x046DC52B
-/* line 1: K400 / K400r, media keys first */
+/* line 1: K400 / K400r media keys first (01) */
 7 0x10010F1A 0x01000000 0x046DC52B
+/* line 2: receiver (FF), HID++ 1.0 set register 0x00 (80 00) to 00 01 00 = wireless notifications on */
+7 0x10FF8000 0x00010000 0x046DC52B
+/* watch line: 10 01 41 = the device in slot 1 connected, so send the selected lines again */
+0 3 0x10014100 0x046DC52B
 /* K400 Plus (index 09, not tested): use these two lines instead of lines 0 and 1, without the comment marks */
 /* 7 0x10010919 0x00000000 0x046DC52B */
 /* 7 0x10010918 0x01000000 0x046DC52B */
-/* Fn lock at boot: 0x1 = F-keys first, 0x2 = media keys first */
-6 recall 0 eq 0x1 6 recall ifte 6 store
-/* Fn+Esc (reported as Power) toggles it */
-0x00070066 input_state_binary 0x00070066 prev_input_state_binary not mul
-0x3 6 recall sub 6 recall ifte 6 store
-/* send line 0 or 1; 0 for one tick every 5 s so it is sent again */
-6 recall 0x1 eq 0x1 0x2 ifte time_sec 5 mod 0.001 lt not mul 1 store
 ```
 
 - **Model:** keep the two lines for your keyboard and leave the other model's lines commented out. Comments are not stored on the device, so the commented lines are gone when the config is read back.
-- **Settings:** the Fn lock at boot is the `0x1` after `0 eq`. Register 6 holds the current state, register 1 is the selector. The table lines leave 8 values on the stack (peak 11 of 16).
+- **Why two expressions:** the table lines push 16 values (4 per line), the whole 16-deep stack, so the logic needs its own expression.
 - **Map Power (`0x00070066`) → Nothing** on every layer (the example does). On the K400 family Fn+Esc reaches the host as Power, and the computer would otherwise sleep or shut down with every press.
-- **Resend every 5 s:** the keyboard forgets the setting when it is switched off. The selector is 0 for one tick every 5 s, so the setting comes back within 5 s after the keyboard wakes. While the keyboard is off, the receiver just answers with an error. Change `5` to resend less often.
+- **Resend on reconnect:** the keyboard forgets the setting when it is switched off. Line 2 turns on the receiver's wireless notifications (HID++ 1.0 register `0x00`, the same thing the Linux `hid-logitech-dj` driver does), so the receiver reports `10 01 41 ...` when the keyboard connects. The watch line catches that and the Fn lock is sent again within a few milliseconds. A disconnect message (same first bytes) also triggers a resend; that one just gets an error reply. No messages are sent while nothing changes.
 - **Raw values:** use hex (`0x1`) for raw values; plain decimals are stored ×1000. The table's length is the one decimal: the firmware divides it by 1000.
 - **Other slots or models:** if the keyboard is in another receiver slot, change the second byte (`01`). For another model, the index and slot can be read from the keyboard with a HID++ root lookup (`10 <slot> 00 0A 40 A0 00` → reply byte 4 is the index).
 - **Two receivers of the same type** (e.g. a second Unifying receiver with mice) both match `0x046DC52B`. The command then also reaches slot 1 of the other receiver, which would run function 1 of whatever feature that device has at the same index. Plug only the keyboard's receiver into the remapper, or make sure slot 1 of the other receiver is not affected.

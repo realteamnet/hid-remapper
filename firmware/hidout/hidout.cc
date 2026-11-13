@@ -16,6 +16,7 @@
 #define MAX_REPLIES 8
 #define MAX_LINES 32
 #define MAX_DATA 63
+#define MAX_PATTERN 16
 #define MONITOR_SENT 0xFFFE0000
 #define MONITOR_HAVE_REPORT 0xFFFE0100
 #define MONITOR_MATCHED 0xFFFE0200
@@ -40,6 +41,13 @@ struct line_t {
     std::vector<uint32_t> targets;
 };
 
+struct watch_t {
+    uint8_t len;
+    uint8_t bytes[MAX_PATTERN];
+    std::vector<uint32_t> targets;
+};
+
+static std::vector<watch_t> watches;
 static uint32_t prev_selected = 0;
 static uint32_t prev_table_hash = 0;
 static std::vector<uint16_t> sent_to[MAX_LINES];
@@ -84,10 +92,28 @@ static void log_devices() {
     my_mutex_exit(MutexId::THEIR_USAGES);
 }
 
-// A line is <length in bytes, decimal> <report as 32-bit words, report ID first> <targets>, ended by eol.
-// Lines without values (e.g. comment-only lines) are not counted.
-// Table lines are lines (ended by eol) that hold only numbers, in any expression, numbered in
-// order from expression 1. Lines with operations and empty lines are not table lines.
+// Table lines are lines (ended by eol) that hold only numbers, in any expression.
+// Send line: <length in bytes> <report as 32-bit words, report ID first> <targets>, numbered from 0.
+// Watch line: 0 <pattern length> <pattern words> <targets>, not numbered: an input report from a
+// target that starts with the pattern makes the selected send lines go out again.
+static void add_watch(std::vector<watch_t>& found, const std::vector<uint32_t>& vals) {
+    if (vals.size() < 2) {
+        return;
+    }
+    watch_t w = {};
+    uint32_t len = vals[1];
+    uint32_t words = (len + 3) / 4;
+    if ((len < 1) || (len > MAX_PATTERN) || (vals.size() < 2 + words)) {
+        return;
+    }
+    for (uint32_t b = 0; b < len; b++) {
+        w.bytes[b] = vals[2 + b / 4] >> (24 - 8 * (b % 4));
+    }
+    w.len = len;
+    w.targets.assign(vals.begin() + 2 + words, vals.end());
+    found.push_back(w);
+}
+
 static void add_line(std::vector<line_t>& lines, const std::vector<uint32_t>& vals) {
     if (lines.size() >= MAX_LINES) {
         return;
@@ -110,7 +136,7 @@ static void add_line(std::vector<line_t>& lines, const std::vector<uint32_t>& va
     lines.push_back(line);  // a malformed line keeps its number but has report ID 0 and is never sent
 }
 
-static uint32_t parse_table(std::vector<line_t>& lines) {
+static uint32_t parse_table(std::vector<line_t>& lines, std::vector<watch_t>& found) {
     uint32_t hash = 2166136261u;
     std::vector<uint32_t> vals;
     my_mutex_enter(MutexId::EXPRESSIONS);
@@ -120,7 +146,8 @@ static uint32_t parse_table(std::vector<line_t>& lines) {
         for (size_t i = 0; i <= expr.size(); i++) {
             if ((i < expr.size()) && (expr[i].op != Op::EOL)) {
                 if ((expr[i].op == Op::PUSH) || (expr[i].op == Op::PUSH_USAGE)) {
-                    vals.push_back((vals.empty() && (expr[i].op == Op::PUSH)) ? expr[i].val / 1000 : expr[i].val);
+                    bool count = vals.empty() || ((vals.size() == 1) && (vals[0] == 0));
+                    vals.push_back((count && (expr[i].op == Op::PUSH)) ? expr[i].val / 1000 : expr[i].val);
                 } else {
                     numbers_only = false;
                 }
@@ -131,7 +158,11 @@ static uint32_t parse_table(std::vector<line_t>& lines) {
                     hash = (hash ^ v) * 16777619u;
                 }
                 hash = (hash ^ 0xEE) * 16777619u;
-                add_line(lines, vals);
+                if (vals[0] == 0) {
+                    add_watch(found, vals);
+                } else {
+                    add_line(lines, vals);
+                }
             }
             numbers_only = true;
             vals.clear();
@@ -230,11 +261,13 @@ void hidout_task() {
     }
 
     std::vector<line_t> lines;
-    uint32_t hash = parse_table(lines);
+    std::vector<watch_t> found;
+    uint32_t hash = parse_table(lines, found);
+    watches.swap(found);
     bool table_changed = hash != prev_table_hash;
     prev_table_hash = hash;
     if (table_changed) {
-        LOG("hidout: table has %u lines", (unsigned) lines.size());
+        LOG("hidout: table has %u send lines, %u watch lines", (unsigned) lines.size(), (unsigned) watches.size());
         for (uint32_t n = 0; n < lines.size(); n++) {
             if (lines[n].report_id == 0) {
                 LOG("hidout: line %u is malformed and is never sent", (unsigned) n);
@@ -263,6 +296,16 @@ void hidout_task() {
 }
 
 void hidout_report_received(uint8_t dev_addr, uint8_t instance, const uint8_t* report, uint16_t len) {
+    for (auto const& w : watches) {
+        if ((len >= w.len) && (memcmp(report, w.bytes, w.len) == 0) && target_ok(w.targets, dev_addr)) {
+            for (auto& sent : sent_to) {
+                sent.clear();
+            }
+            next_check = 0;
+            LOG("hidout: watch line matched on interface %04x, sending the selected lines again", (dev_addr << 8) | instance);
+            break;
+        }
+    }
     if ((replies_left == 0) || (((dev_addr << 8) | instance) != reply_interface) || (get_time() > reply_until)) {
         return;
     }
