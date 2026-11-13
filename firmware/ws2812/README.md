@@ -173,7 +173,9 @@ it stays:
 All keys still reach the computer, except Scroll Lock and Power (Fn+Esc on a
 Logitech K400, see "Fn lock" below).
 
-| Key | Mode | In that mode |
+Hold **Win and Ctrl** (either side) and press F1-F12 to pick the mode:
+
+| Win+Ctrl+ | Mode | In that mode |
 | --- | --- | --- |
 | F1 | Colour map, full brightness | Keys 1-9 pick a colour, 0 turns the LED off. |
 | F2 | Colour map, low brightness (the power-on mode) | The same, at intensity 0x20. |
@@ -182,6 +184,9 @@ Logitech K400, see "Fn lock" below).
 | F5 | Gamepad | Each button lights its own colour while it is held. With no button held, the sticks set the colour. |
 | F6-F12 | Unused | The LED keeps the picked colour; the number keys do nothing. |
 
+- Plain F1-F12 do not change the mode. The key presses still reach the
+  computer, so the Win+Ctrl+F-key shortcuts of the operating system still
+  happen (on Windows, Win+Ctrl+F4 closes the current virtual desktop).
 - **Brightness.** F1 and F2 also set the brightness used by modes 3 and 5 and
   by F6-F12.
 - **Scroll Lock** steps through the 8 layers. Each layer change picks colour
@@ -235,7 +240,7 @@ chosen index into a colour. The expressions run in order, every millisecond:
 
 | Expression | Elements | Stack | Job |
 | --- | --- | --- | --- |
-| 1 | 268 | 7 | LED settings; power-on colour; F keys → mode and brightness; number keys; layer change or number key → picked index. |
+| 1 | 282 | 7 | LED settings; power-on colour; Win+Ctrl+F keys → mode and brightness; number keys; layer change or number key → picked index. |
 | 2 | 168 | 13 | Animation state and the animation colour. |
 | 3 | 235 | 3 | Hub ports: counts the ports in use, then finds the n-th one for the current 0.6 s slot. Ends with `0 port`. |
 | 4 | 201 | 4 | Gamepad: button index, and the stick colour. |
@@ -251,7 +256,7 @@ chosen index into a colour. The expressions run in order, every millisecond:
 | 12, 14, 15 | hub ports: current slot, running count, ports in use |
 | 13 | number key pressed while in mode 4 |
 | 16 | gamepad button index (0 = none) |
-| 17 | F key held (1-12, 0 = none) |
+| 17 | F key held together with Win and Ctrl (1-12, 0 = none) |
 | 18 | number key held (1-9, 10 for the 0 key, 0 = none) |
 | 19 | brightness as `0xII000000` |
 | 20 | mode (1-12) |
@@ -268,7 +273,7 @@ chosen index into a colour. The expressions run in order, every millisecond:
 **Limits when editing.** The stack is **16** deep. There is no limit on the
 length of one expression, but the whole config must fit in 4096 bytes when
 saved: each word costs 1 byte and each number or hex value 5 bytes (this
-example's expressions use 2660). Decimal numbers are x1000 internally; hex
+example's expressions use 2690). Decimal numbers are x1000 internally; hex
 values are used as-is. `time_sec` is in milliseconds on that scale and wraps
 after about 24 days. `sin` takes degrees. `round` gives whole numbers, so
 `round 0x10000 mul` places a 0-255 value in the red byte and

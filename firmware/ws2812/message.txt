@@ -1,7 +1,7 @@
-CLAUDE- ws2812 example: power-on colour 0x20FFFFFF
+CLAUDE- ws2812 example: Win+Ctrl+F1-F12 select the mode
 
-The example's power-on colour (expression 1, line 2) is now white at
-intensity 0x20 instead of blue; README updated.
+Plain F keys no longer switch the LED mode; either Ctrl and either Win
+must be held. README key table updated.
 
 Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd
