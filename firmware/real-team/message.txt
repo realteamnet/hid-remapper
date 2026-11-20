@@ -1,8 +1,12 @@
-CLAUDE-RGB demo: blue power-on colour
+CLAUDE-CI: WSL runner only, GitHub-hosted fallback commented out
 
-The demo showed 0x20FFFFFF (white) for 2 s after power-on, hiding the
-firmware boot colour; it now uses 0x200000FF like the firmware. After 2 s
-the layer colour shows as before (white on layer 0).
+GitHub disabled Actions on this repo for wasted compute: the watch job in
+build.yml polled on a GitHub runner for the whole length of every
+self-hosted build. build.yml now has only the self-hosted job (no
+max_wait, so a queued job still builds when the runner returns); the
+watch/github jobs are kept as comments. sync-upstream.yml runs its merge
+and build on the self-hosted runner (remote add made idempotent for the
+reused workspace). build-rp2040.yml defaults to the self-hosted runner.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd

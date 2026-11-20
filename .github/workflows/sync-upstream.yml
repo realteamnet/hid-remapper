@@ -1,6 +1,7 @@
 name: sync-upstream
-# Merges jfedor2/hid-remapper master into this fork's master once a day, then
-# builds. A merge conflict fails the run and nothing is pushed.
+# Merges jfedor2/hid-remapper master into this fork's master once a day, then builds.
+# Both jobs run on the owner's self-hosted WSL runner (GitHub-hosted runners are not used,
+# see build.yml). A merge conflict fails the run and nothing is pushed.
 on:
   schedule:
     - cron: '17 3 * * *'
@@ -13,7 +14,8 @@ permissions:
 concurrency: sync-upstream
 jobs:
   sync:
-    runs-on: ubuntu-22.04
+    # runs-on: ubuntu-22.04
+    runs-on: [self-hosted, wsl-build]
     outputs:
       merged: ${{ steps.merge.outputs.merged }}
     steps:
@@ -25,7 +27,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git remote add upstream https://github.com/jfedor2/hid-remapper.git
+          git remote add upstream https://github.com/jfedor2/hid-remapper.git 2>/dev/null || git remote set-url upstream https://github.com/jfedor2/hid-remapper.git
           git fetch --no-tags upstream master
           if git merge-base --is-ancestor upstream/master HEAD; then
             echo "merged=false" >> "$GITHUB_OUTPUT"
@@ -40,5 +42,6 @@ jobs:
     uses: ./.github/workflows/build-rp2040.yml
     with:
       ref: master
+      runner: '["self-hosted", "wsl-build"]'
     permissions:
       contents: write

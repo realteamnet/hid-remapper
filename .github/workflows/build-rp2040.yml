@@ -6,9 +6,9 @@ on:
         type: string
         default: ''
       runner:
-        description: runs-on value as JSON
+        description: runs-on value as JSON (GitHub-hosted '"ubuntu-22.04"' is not used, see build.yml)
         type: string
-        default: '"ubuntu-22.04"'
+        default: '["self-hosted", "wsl-build"]'
       max_wait:
         description: skip (successfully) if the job starts more than this many seconds after the run started
         type: number
