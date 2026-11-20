@@ -43,6 +43,7 @@ if(VDISK_ENABLE)
         set(VDISK_TOOL_SRC ${CMAKE_CURRENT_LIST_DIR}/../../../config-tool-web)
         set(VDISK_DEMO ${CMAKE_CURRENT_LIST_DIR}/../example_ws2812.json)
         set(VDISK_DEMO2 ${CMAKE_CURRENT_LIST_DIR}/../example_hidout.json)
+        set(VDISK_DEMO3 ${CMAKE_CURRENT_LIST_DIR}/../example_ws2812_commands.json)
         set(VDISK_TOOL_HTML ${CMAKE_CURRENT_BINARY_DIR}/vdisk_webtool.htm)
 
         # Bootstrap: the same files and hashes as the CDN links in index.html
@@ -68,7 +69,8 @@ if(VDISK_ENABLE)
             OUTPUT ${VDISK_TOOL_HTML}
             COMMAND ${CMAKE_COMMAND}
                 -DSRC=${VDISK_TOOL_SRC}
-                -DDEMO=$<$<IN_LIST:WS2812_ENABLED,${VDISK_DEFS}>:${VDISK_DEMO}>
+                -DDEMO=$<$<IN_LIST:WS2812_REGISTERS_ENABLED,${VDISK_DEFS}>:${VDISK_DEMO}>
+                -DDEMO3=$<$<IN_LIST:WS2812_COMMANDS_ENABLED,${VDISK_DEFS}>:${VDISK_DEMO3}>
                 -DDEMO2=$<$<IN_LIST:HIDOUT_ENABLED,${VDISK_DEFS}>:${VDISK_DEMO2}>
                 -DCSS=${CMAKE_CURRENT_BINARY_DIR}/vdisk_bootstrap.min.css
                 -DBOOTSTRAP_JS=${CMAKE_CURRENT_BINARY_DIR}/vdisk_bootstrap.min.js
@@ -79,6 +81,7 @@ if(VDISK_ENABLE)
                 ${CMAKE_CURRENT_LIST_DIR}/highlight.js
                 ${VDISK_DEMO}
                 ${VDISK_DEMO2}
+                ${VDISK_DEMO3}
                 ${VDISK_TOOL_SRC}/index.html
                 ${VDISK_TOOL_SRC}/code.js
                 ${VDISK_TOOL_SRC}/crc.js

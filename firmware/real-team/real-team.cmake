@@ -1,7 +1,7 @@
 # Included from firmware/CMakeLists.txt after the remapper target is defined.
 # Settings (-D...): see README.md, "Build settings".
 
-foreach(setting WS2812_ENABLE HIDOUT_ENABLE)
+foreach(setting WS2812_ENABLE WS2812_REGISTERS WS2812_COMMANDS HIDOUT_ENABLE)
     if(NOT DEFINED ${setting})
         set(${setting} ON)
     endif()
@@ -28,6 +28,13 @@ if(WS2812_ENABLE)
         WS2812_SETTINGS_REGISTER=${WS2812_SETTINGS_REGISTER}
         WS2812_COLOR_REGISTER=${WS2812_COLOR_REGISTER}
     )
+    if(WS2812_REGISTERS)
+        target_compile_definitions(remapper PRIVATE WS2812_REGISTERS_ENABLED)
+    endif()
+    if(WS2812_COMMANDS)
+        target_sources(remapper PRIVATE ${CMAKE_CURRENT_LIST_DIR}/ws2812_cmd.cc)
+        target_compile_definitions(remapper PRIVATE WS2812_COMMANDS_ENABLED)
+    endif()
     foreach(setting WS2812_BOOT_SETTINGS WS2812_BOOT_COLOR)
         if(DEFINED ${setting})
             target_compile_definitions(remapper PRIVATE ${setting}=${${setting}})
@@ -43,8 +50,8 @@ if(HIDOUT_ENABLE)
     )
 endif()
 
-# the command table (numbers-only expression lines) is used by hidout
-if(HIDOUT_ENABLE)
+# the command table (numbers-only expression lines) is needed by hidout and by the LED commands
+if(HIDOUT_ENABLE OR (WS2812_ENABLE AND WS2812_COMMANDS))
     target_sources(remapper PRIVATE ${CMAKE_CURRENT_LIST_DIR}/cmd_table.c ${CMAKE_CURRENT_LIST_DIR}/cmd_table_remapper.cc)
     target_compile_definitions(remapper PRIVATE REAL_TEAM_CMD_TABLE)
 endif()

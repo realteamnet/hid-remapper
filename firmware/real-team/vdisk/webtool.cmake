@@ -1,4 +1,4 @@
-# cmake -DSRC=<config-tool-web> -DDEMO=<json> -DDEMO2=<json> -DCSS=... -DBOOTSTRAP_JS=... -DOUT=... -P webtool.cmake
+# cmake -DSRC=<config-tool-web> -DDEMO=<json> -DDEMO2=<json> -DDEMO3=<json> -DCSS=... -DBOOTSTRAP_JS=... -DOUT=... -P webtool.cmake
 #
 # Builds the single-file web config tool for the drive: the four scripts are
 # joined (imports/exports removed), the two demo configs are added as the first
@@ -30,11 +30,15 @@ string(REGEX REPLACE "\nexport default [A-Za-z_]+;" "\n" examples_js "${examples
 string(REGEX REPLACE "(^|\n)import [^\n]*" "\\1" code_js "${code_js}")
 
 fail_unless_once("${examples_js}" "const examples = [" "'const examples = [' in examples.js")
-# the examples of the modules in this build (DEMO / DEMO2 are empty when the module is off)
+# the examples of the modules in this build (DEMO / DEMO2 / DEMO3 are empty when the feature is off)
 set(demos "")
 if(DEMO)
     file(READ ${DEMO} demo)
-    string(APPEND demos "\n{'description': 'RGB LED demo (WS2812 on GPIO16): Ctrl+Alt+F1-F5 modes, keys 1-0 colours, Calc cycles layers', 'config': ${demo}},")
+    string(APPEND demos "\n{'description': 'RGB LED demo, registers (WS2812 on GPIO16): Ctrl+Alt+F1-F5 modes, keys 1-0 colours, Calc cycles layers', 'config': ${demo}},")
+endif()
+if(DEMO3)
+    file(READ ${DEMO3} demo3)
+    string(APPEND demos "\n{'description': 'RGB LED demo, command lines: Keypad 1-3 held play police / blink / breathing, Calc toggles a rainbow', 'config': ${demo3}},")
 endif()
 if(DEMO2)
     file(READ ${DEMO2} demo2)

@@ -8,10 +8,11 @@ The real-team additions to [hid-remapper](https://github.com/jfedor2/hid-remappe
 | `real_team.h`, `real_team.cc` | The functions hid-remapper calls (main loop, device reports, USB descriptor). |
 | `cmd_table.h`, `cmd_table.c` | The [command table](#command-table): numbers-only config lines, handed to the feature that owns them. Plain C99, reusable in other code bases. |
 | `cmd_table_remapper.h`, `cmd_table_remapper.cc` | The hid-remapper side of the table: reads the lines from the config's expressions and passes them on when they changed. |
-| `ws2812.h`, `ws2812.cc`, `ws2812.pio` | [RGB LED](#rgb-led-ws2812): WS2812, WS2812B, SK6812 RGB, NeoPixel, driven by registers 31 (settings) and 32 (colour). |
+| `ws2812.h`, `ws2812.cc`, `ws2812.pio` | [RGB LED](#rgb-led-ws2812): WS2812, WS2812B, SK6812 RGB, NeoPixel, controlled by registers 31 (settings) and 32 (colour) and/or LED command lines. |
+| `ws2812_cmd.h`, `ws2812_cmd.cc` | [LED command lines](#led-command-lines): a settings line and animation lines played by the firmware (a command-table user). |
 | `hidout.h`, `hidout.cc` | [HID output reports](#hid-output-reports-hidout) to devices plugged into the remapper (a command-table user). |
 | `vdisk/` | [USB configuration drive](#configuration-drive-vdisk): `config.json`, apply by copying a `.json`, `config.html`, `readme.txt`, `autorun.inf`. |
-| `example_ws2812.json`, `example_hidout.json` | The RGB LED demo and the Logitech K400 Fn-lock example (both also in the drive's `config.html` Examples). |
+| `example_ws2812.json`, `example_ws2812_commands.json`, `example_hidout.json` | The RGB LED demo with registers, the RGB LED demo with command lines, and the Logitech K400 Fn-lock example (all in the drive's `config.html` Examples when their feature is built). |
 | `message.txt` | Commit-message scratch file. |
 
 ## Build settings
@@ -24,7 +25,7 @@ CMake variables (`-D...`):
 | `HIDOUT_ENABLE` | `ON` | HID output reports. `HIDOUT_REGISTER` (default `1`) is the selector register. |
 | `VDISK_ENABLE` | `ON` | Configuration drive. `VDISK_WEB_TOOL` (default `ON`), `VDISK_DEBUG` (default `OFF`). |
 
-With all three off, or without this folder, the firmware is upstream's (plus the fixes listed under "Changes to hid-remapper's own files"). The drive's `config.html` only lists an example when its feature is in the build. The command table is built when a feature that uses it is on (currently hidout).
+With all three off, or without this folder, the firmware is upstream's (plus the fixes listed under "Changes to hid-remapper's own files"). The drive's `config.html` only lists an example when its feature is in the build. The command table is built when a feature that uses it is on (hidout, or the LED with `WS2812_COMMANDS`).
 
 ## Command table
 
@@ -38,7 +39,9 @@ Config lines made of **numbers only** are table lines. They're ordinary hid-rema
 | --- | --- | --- |
 | decimal ≥ 2 | hidout send line | `7 0x10010F1A 0x00000000 0x046DC52B` |
 | `0` | hidout watch line | `0 3 0x10014100 0x046DC52B` |
-| hex | reserved for other features: a tag word, e.g. `0x4C4541nn` | (planned LED lines) |
+| hex `0x4C4553..` | LED settings line | `0x4C455300 0x00012310` |
+| hex `0x4C4541..` | LED animation line | `0x4C454105 0xFFFF0000 0.125 0xFF0000FF 0.125` |
+| other hex | reserved for other features (a tag word) | |
 
   A line no feature claims is ignored.
 - **Stack:** hid-remapper also evaluates the lines, pushing their values; keep each expression within the 16-deep stack, or hid-remapper skips that expression (the firmware still reads the table).
@@ -170,6 +173,26 @@ without knowing the pin (see "Boards" below).
 - Intensity scales R, G and B before they are sent. RGBW (SK6812) LEDs are not
   supported.
 
+### LED command lines
+
+The second way to control the LED (`WS2812_COMMANDS`, on by default): lines of plain numbers in any expression, read through the [command table](#command-table) and played by the firmware. They need no expression code and no new expression words, so the config still loads on upstream firmware. Example: `example_ws2812_commands.json`.
+
+```
+/* settings: tag 0x4C4553 ("LES") + 00, then 0xWWLOOOPP (same as register 31) */
+0x4C455300 0x00012310
+/* animation: tag 0x4C4541 ("LEA") + trigger register (hex 01-20), then colour + seconds, repeated */
+0x4C454105 0xFFFF0000 0.125 0xFF0000FF 0.125              /* reg 5: police */
+0x4C454106 0xFFFF0000 0.25 0x00000000 0.25                /* reg 6: red blink */
+0x4C454107 0x040000FF -1 0xFF0000FF -1                    /* reg 7: blue breathing */
+0x4C454108 0x60FF0000 -1 0x6000FF00 -1 0x600000FF -1      /* reg 8: rainbow */
+```
+
+- **Settings line:** used when register 31 is 0 (or the register method is off). The last settings line wins.
+- **Animation line:** plays while its trigger register is not 0, looping, and restarts from its first step each time the register turns on. Colours are `0xIIRRGGBB`; times are seconds as plain decimals (stored ×1000, so they are milliseconds; `0.125` = 125 ms). A **negative** time fades from that colour to the next step's over that time (the last step fades into the first). Up to 16 animation lines with up to 32 steps each.
+- **Triggers:** a mapping with target "Register 5" sets register 5 while its key is held, so the animation plays while the key is held, with no expression. An expression can switch it too: `1 5 store` / `0 5 store`, or a toggle like the Calc key in the example.
+- **Which colour shows:** a playing animation (if several play, the later line wins), else register 32 (register method), else the boot colour.
+- **Stack:** hid-remapper also pushes each line's values; keep each expression within 16 values (the example spreads its lines over expressions 2 and 3).
+
 #### Colour names in the web config tool
 
 `config-tool-web` accepts colour names in expressions and saves
@@ -199,7 +222,9 @@ hardware yet.
 | --- | --- |
 | `ws2812.pio` | PIO program, converted line by line from the MicroPython `@rp2.asm_pio` sample, plus `ws2812_program_init()`. |
 | `ws2812.h` | Compile-time settings and `ws2812_led_task()`. |
-| `ws2812.cc` | Driver: follows registers 31 and 32. |
+| `ws2812.cc` | Driver: follows registers 31 and 32 and the command lines. |
+| `ws2812_cmd.h`, `ws2812_cmd.cc` | LED command lines (settings, animations). |
+| `example_ws2812_commands.json` | Example config for the command method. |
 | `example_ws2812.json` | Example config, described below. |
 
 ### Build settings
@@ -211,6 +236,8 @@ CMake variables (`-D...`, or set before the include):
 | `WS2812_ENABLE` | `ON` | `OFF` leaves the module out of the build. |
 | `WS2812_SETTINGS_REGISTER` | `31` | Expression register (1-32) holding the settings. |
 | `WS2812_COLOR_REGISTER` | `32` | Expression register (1-32) holding the colour. |
+| `WS2812_REGISTERS` | `ON` | The register method (registers 31/32). |
+| `WS2812_COMMANDS` | `ON` | The command method ([LED command lines](#led-command-lines)). Both methods may be on; at least one is needed to control the LED from the config. |
 | `WS2812_BOOT_SETTINGS` | `0x000000FF` if the board header has `PICO_DEFAULT_WS2812_PIN`, else `0` | Settings used from power-on until the config writes register 31 or 32. `0` = LED off until then. |
 | `WS2812_BOOT_COLOR` | `0x10FFFFFF` | Colour shown with the boot settings (dim white, intensity 0x10; white looks the same in any colour order). |
 

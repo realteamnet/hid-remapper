@@ -6,6 +6,9 @@
 #ifdef WS2812_ENABLED
 #include "ws2812.h"
 #endif
+#ifdef WS2812_COMMANDS_ENABLED
+#include "ws2812_cmd.h"
+#endif
 #ifdef VDISK_ENABLED
 #include "vdisk.h"
 #endif
@@ -19,6 +22,9 @@ void real_team_task() {
         initialized = true;
 #ifdef HIDOUT_ENABLED
         hidout_init();
+#endif
+#ifdef WS2812_COMMANDS_ENABLED
+        ws2812_cmd_init();
 #endif
     }
 #ifdef REAL_TEAM_CMD_TABLE

@@ -1,9 +1,21 @@
-CLAUDE-RGB demo: Calc key cycles the layers
+CLAUDE-LED command lines beside the register method, with an example
 
-The demo layer key is now Calc (consumer 0x000C0192, e.g. the 8BitDo numpad)
-instead of Scroll Lock: 7 sticky Calc -> Layer k+1 mappings, plus Calc ->
-Nothing on layer 7, so Calc never reaches the computer (it would open the
-calculator). README and the config.html example text updated.
+- ws2812_cmd.h/.cc: command-table handler for LED lines (numbers only, no new
+  expression words): settings 0x4C455300 <0xWWLOOOPP>, animation
+  0x4C4541nn <0xIIRRGGBB> <seconds> ... playing while register nn != 0,
+  negative seconds = fade, latest active line wins, up to 16 x 32 steps.
+- ws2812.cc: settings = register 31, else the settings line, else boot;
+  colour = playing animation, else register 32, else boot.
+- CMake: WS2812_REGISTERS and WS2812_COMMANDS (both ON); the command table
+  is built for hidout or the LED commands.
+- example_ws2812_commands.json: settings line, Keypad 1-3 held -> police /
+  blink / breathing, Calc toggles a rainbow, steady colour in register 32.
+  config.html lists each RGB example only when its method is built.
+- README: "LED command lines" section, build settings, command-table owners.
+
+Tested: 15 harness tests for the command lines (parsing, timing, looping,
+restart, latest wins, fades); builds for both / registers only / commands
+only / commands without hidout / LED off / all off.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd

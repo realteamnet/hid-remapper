@@ -5,6 +5,9 @@
 #include <hardware/timer.h>
 
 #include "ws2812.pio.h"
+#ifdef WS2812_COMMANDS_ENABLED
+#include "ws2812_cmd.h"
+#endif
 
 #define WS2812_FREQ 800000
 #define WS2812_LATCH_US 350
@@ -141,10 +144,28 @@ static void configure(uint32_t settings, uint32_t color) {
 }
 
 void ws2812_led_task() {
-    uint32_t settings = registers[WS2812_SETTINGS_REGISTER - 1];
-    uint32_t color = registers[WS2812_COLOR_REGISTER - 1];
+    uint32_t settings = 0;
+    uint32_t color = 0;
+    bool used = false;
+#ifdef WS2812_REGISTERS_ENABLED
+    settings = registers[WS2812_SETTINGS_REGISTER - 1];
+    color = registers[WS2812_COLOR_REGISTER - 1];
+    used = settings || color;
+#endif
+#ifdef WS2812_COMMANDS_ENABLED
+    uint32_t cmd_settings;
+    if ((settings == 0) && ws2812_cmd_settings(&cmd_settings)) {
+        settings = cmd_settings;
+        used = true;
+    }
+    uint32_t cmd_color;
+    if (ws2812_cmd_color(time_us_64(), &cmd_color)) {
+        color = cmd_color;
+        used = true;
+    }
+#endif
     if (!config_seen) {
-        if (settings || color) {
+        if (used) {
             config_seen = true;
         } else {
             settings = WS2812_BOOT_SETTINGS;
