@@ -32,7 +32,7 @@
 #endif
 
 #ifndef WS2812_BOOT_COLOR
-#define WS2812_BOOT_COLOR 0x200000FF
+#define WS2812_BOOT_COLOR 0x10FFFFFF
 #endif
 
 void ws2812_led_task();

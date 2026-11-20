@@ -81,7 +81,7 @@ LEDs: WS2812, WS2812B, SK6812 (RGB) and Adafruit NeoPixels.
   The config can name any GPIO, or ask for the board's own LED.
 - **Boot colour.** On a board whose header names its LED pin
   (`PICO_DEFAULT_WS2812_PIN`: `waveshare_rp2040_zero`, `feather_host`,
-  `waveshare_rp2350_usb_a`), the board LED shows `0x200000FF` (dim blue) from
+  `waveshare_rp2350_usb_a`), the board LED shows `0x10FFFFFF` (dim white) from
   power-on until the config writes the settings or colour register; then the
   config takes over. On other boards no LED code runs and no pin is touched
   until the config writes the settings register. `WS2812_BOOT_SETTINGS` and
@@ -212,7 +212,7 @@ CMake variables (`-D...`, or set before the include):
 | `WS2812_SETTINGS_REGISTER` | `31` | Expression register (1-32) holding the settings. |
 | `WS2812_COLOR_REGISTER` | `32` | Expression register (1-32) holding the colour. |
 | `WS2812_BOOT_SETTINGS` | `0x000000FF` if the board header has `PICO_DEFAULT_WS2812_PIN`, else `0` | Settings used from power-on until the config writes register 31 or 32. `0` = LED off until then. |
-| `WS2812_BOOT_COLOR` | `0x200000FF` | Colour shown with the boot settings (dim blue; blue is the last byte in both GRB and RGB order). |
+| `WS2812_BOOT_COLOR` | `0x10FFFFFF` | Colour shown with the boot settings (dim white, intensity 0x10; white looks the same in any colour order). |
 
 A project that needs registers 31/32 for something else can move them, e.g.
 `cmake -DWS2812_SETTINGS_REGISTER=7 -DWS2812_COLOR_REGISTER=8 ..`. Configs must
@@ -233,12 +233,12 @@ The second line of expression 1 sets the colour shown at power-on and how long
 it stays:
 
 ```
-0x200000FF 8 store 2 7 store
+0x10FFFFFF 8 store 2 7 store
 ```
 
-- `0x200000FF` (register 8) is the colour, in the usual `0xIIRRGGBB` form
-  (here blue at intensity 0x20, the same as the firmware's boot colour). Colour
-  names work too, e.g. `blue:20`.
+- `0x10FFFFFF` (register 8) is the colour, in the usual `0xIIRRGGBB` form
+  (here white at intensity 0x10, the same as the firmware's boot colour). Colour
+  names work too, e.g. `white:10`.
 - `2` (register 7) is the time in seconds. After it, the LED shows the normal
   colour for the current mode (white at power-on).
 - It appears about 1 ms after the firmware starts, whether or not a computer is
