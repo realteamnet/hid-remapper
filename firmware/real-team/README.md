@@ -584,13 +584,13 @@ include(real-team/real-team.cmake OPTIONAL)
 #include "real_team.h"
 #endif
 ...
-        activity_led_off_maybe();
+        tud_task();
 #ifdef REAL_TEAM_ENABLED
         real_team_task();
 #endif
 ```
 
-`real_team_task()` runs `vdisk_task()`, `ws2812_led_task()` and `hidout_task()` once per main-loop iteration.
+`real_team_task()` runs the command-table read, `vdisk_task()`, `ws2812_led_task()` and `hidout_task()` once per main-loop iteration. It must stay right after `tud_task()`: a config loaded from the drive (`vdisk_task()`) is then put into effect by the `config_updated` handling just below, in the same pass, as upstream does for configs from the web tool. Called later in the loop, the next pass would run `process_mapping()` with the new config but the old mapping tables.
 
 ### `firmware/src/remapper_single.cc`
 

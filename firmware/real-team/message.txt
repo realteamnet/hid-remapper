@@ -1,7 +1,13 @@
-CLAUDE-LED boot colour 0x10FFFFFF
+CLAUDE-Call real_team_task() right after tud_task()
 
-WS2812_BOOT_COLOR default 0x200000FF -> 0x10FFFFFF (dim white, user
-request); the RGB demo power-on colour matches.
+The restructure moved the module hook to the end of the main loop. A config
+loaded from the drive (vdisk_task) was then only put into effect
+(config_updated -> set_mapping_from_config) on the next pass, after
+process_mapping() had already run with the new config and the old mapping
+tables. After a config load the device dropped off USB ("Device Descriptor
+Request Failed") and the new config was not saved. The hook is back where
+vdisk_task() used to be, so the config takes effect in the same pass, as
+upstream does for configs from the web tool.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd
