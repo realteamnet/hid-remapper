@@ -233,11 +233,12 @@ The second line of expression 1 sets the colour shown at power-on and how long
 it stays:
 
 ```
-0x20FFFFFF 8 store 2 7 store
+0x200000FF 8 store 2 7 store
 ```
 
-- `0x20FFFFFF` (register 8) is the colour, in the usual `0xIIRRGGBB` form
-  (here white at intensity 0x20). Colour names work too, e.g. `white:20`.
+- `0x200000FF` (register 8) is the colour, in the usual `0xIIRRGGBB` form
+  (here blue at intensity 0x20, the same as the firmware's boot colour). Colour
+  names work too, e.g. `blue:20`.
 - `2` (register 7) is the time in seconds. After it, the LED shows the normal
   colour for the current mode (white at power-on).
 - It appears about 1 ms after the firmware starts, whether or not a computer is

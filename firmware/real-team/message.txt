@@ -1,22 +1,8 @@
-CLAUDE-Flatten real-team, shared command table, one README
+CLAUDE-RGB demo: blue power-on colour
 
-- Backup of the previous layout: tag + branch backup/ws2812-two-registers
-  (8ab26d2).
-- firmware/real-team/ is flat except vdisk/: ws2812.* and hidout.* moved up
-  (git mv); ws2812.cmake and hidout.cmake folded into real-team.cmake.
-- Examples renamed example_ws2812.json and example_hidout.json.
-- Command table: cmd_table.h/.c, portable C99 (no Pico or hid-remapper
-  includes) so other code bases can use the format; cmd_table_remapper.cc is
-  the hid-remapper side (reads numbers-only expression lines every 250 ms or
-  when hidout's selector changes, passes them on when the hash changed).
-  hidout is now a table handler (decimal-first lines); hex-first lines are
-  reserved for other features.
-- One README.md: overview, build settings, command-table format and reuse,
-  RGB LED, hidout, config drive, upstream edits.
-
-Tested: hidout harness through the table (32 tests incl. a hex-first line
-not taking a hidout line number); cmd_table.c with -std=c99 -pedantic;
-local builds for waveshare_rp2040_zero, pico, hidout off, LED off, all off.
+The demo showed 0x20FFFFFF (white) for 2 s after power-on, hiding the
+firmware boot colour; it now uses 0x200000FF like the firmware. After 2 s
+the layer colour shows as before (white on layer 0).
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd
