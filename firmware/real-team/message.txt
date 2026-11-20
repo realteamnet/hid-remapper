@@ -1,13 +1,9 @@
-CLAUDE-Call real_team_task() right after tud_task()
+CLAUDE-RGB demo: Calc key cycles the layers
 
-The restructure moved the module hook to the end of the main loop. A config
-loaded from the drive (vdisk_task) was then only put into effect
-(config_updated -> set_mapping_from_config) on the next pass, after
-process_mapping() had already run with the new config and the old mapping
-tables. After a config load the device dropped off USB ("Device Descriptor
-Request Failed") and the new config was not saved. The hook is back where
-vdisk_task() used to be, so the config takes effect in the same pass, as
-upstream does for configs from the web tool.
+The demo layer key is now Calc (consumer 0x000C0192, e.g. the 8BitDo numpad)
+instead of Scroll Lock: 7 sticky Calc -> Layer k+1 mappings, plus Calc ->
+Nothing on layer 7, so Calc never reaches the computer (it would open the
+calculator). README and the config.html example text updated.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01RvKfUUewbhS38RRKLYCHpd

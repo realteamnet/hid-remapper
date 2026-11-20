@@ -34,7 +34,7 @@ fail_unless_once("${examples_js}" "const examples = [" "'const examples = [' in 
 set(demos "")
 if(DEMO)
     file(READ ${DEMO} demo)
-    string(APPEND demos "\n{'description': 'RGB LED demo (WS2812 on GPIO16): Ctrl+Alt+F1-F5 modes, keys 1-0 colours, Scroll Lock cycles layers', 'config': ${demo}},")
+    string(APPEND demos "\n{'description': 'RGB LED demo (WS2812 on GPIO16): Ctrl+Alt+F1-F5 modes, keys 1-0 colours, Calc cycles layers', 'config': ${demo}},")
 endif()
 if(DEMO2)
     file(READ ${DEMO2} demo2)

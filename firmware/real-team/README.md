@@ -248,7 +248,7 @@ it stays:
 
 #### What the keys do
 
-All keys still reach the computer, except Scroll Lock (including Ctrl+Alt+F1-F8).
+All keys still reach the computer, except Calc (including Ctrl+Alt+F1-F8).
 
 Hold **Ctrl and Alt** (either side) and press F1-F8 to pick the mode:
 
@@ -266,7 +266,7 @@ Hold **Ctrl and Alt** (either side) and press F1-F8 to pick the mode:
   register and two mappings per key, so the example does not.
 - **Brightness.** F1 and F2 also set the brightness used by modes 3 and 5 and
   by F6-F8.
-- **Scroll Lock** steps through the 8 layers. Each layer change picks colour
+- **Calc** (consumer key `0x000C0192`, e.g. on an 8BitDo numpad) steps through the 8 layers. It never reaches the computer. Each layer change picks colour
   1-8 (layer 0 = white ... layer 7 = magenta), as a number key would.
 
 | Index | Colour | Index | Colour |
@@ -299,9 +299,11 @@ indexes 1-9 and buttons 10-13 use 11-14.
 
 #### How it is built
 
-**Layers.** Seven sticky mappings, Scroll Lock → Layer k+1 on layer k
+**Layers.** Seven sticky mappings, Calc → Layer k+1 on layer k
 (k = 0-6). Each press latches the next layer and releases the current one. On
-layer 7 nothing latches, the release clears it, and layer 0 is back.
+layer 7 nothing latches, the release clears it, and layer 0 is back. An eighth
+mapping, Calc → Nothing on layer 7, keeps Calc from reaching the computer there
+(it would open the calculator).
 
 Every colour source produces a palette **index**, and one expression turns the
 chosen index into a colour. The expressions run in order, every millisecond:
@@ -345,7 +347,7 @@ over into later expressions, so reset it with `0 port`.
 **Layers 4-7.** The example needs `NLAYERS = 8` in `firmware/src/remapper.cc`.
 With the old value of 4, sticky layer keys leak to the computer on layers 4-7
 (and momentary layer mappings to 4-7 flicker unless their target layer is
-ticked); in that case add Scroll Lock → Nothing on layer 7.
+ticked).
 
 ### How it works
 

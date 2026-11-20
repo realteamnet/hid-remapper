@@ -22,7 +22,7 @@
     "normalize_gamepad_inputs": true,
     "mappings": [
         {
-            "source_usage": "0x00070047",
+            "source_usage": "0x000c0192",
             "target_usage": "0xfff10001",
             "layers": [
                 0
@@ -35,7 +35,7 @@
             "target_port": 0
         },
         {
-            "source_usage": "0x00070047",
+            "source_usage": "0x000c0192",
             "target_usage": "0xfff10002",
             "layers": [
                 1
@@ -48,7 +48,7 @@
             "target_port": 0
         },
         {
-            "source_usage": "0x00070047",
+            "source_usage": "0x000c0192",
             "target_usage": "0xfff10003",
             "layers": [
                 2
@@ -61,7 +61,7 @@
             "target_port": 0
         },
         {
-            "source_usage": "0x00070047",
+            "source_usage": "0x000c0192",
             "target_usage": "0xfff10004",
             "layers": [
                 3
@@ -74,7 +74,7 @@
             "target_port": 0
         },
         {
-            "source_usage": "0x00070047",
+            "source_usage": "0x000c0192",
             "target_usage": "0xfff10005",
             "layers": [
                 4
@@ -87,7 +87,7 @@
             "target_port": 0
         },
         {
-            "source_usage": "0x00070047",
+            "source_usage": "0x000c0192",
             "target_usage": "0xfff10006",
             "layers": [
                 5
@@ -100,12 +100,25 @@
             "target_port": 0
         },
         {
-            "source_usage": "0x00070047",
+            "source_usage": "0x000c0192",
             "target_usage": "0xfff10007",
             "layers": [
                 6
             ],
             "sticky": true,
+            "tap": false,
+            "hold": false,
+            "scaling": 1000,
+            "source_port": 0,
+            "target_port": 0
+        },
+        {
+            "source_usage": "0x000c0192",
+            "target_usage": "0x00000000",
+            "layers": [
+                7
+            ],
+            "sticky": false,
             "tap": false,
             "hold": false,
             "scaling": 1000,
