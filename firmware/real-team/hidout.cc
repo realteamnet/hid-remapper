@@ -1,5 +1,8 @@
 #include "hidout.h"
 
+#include "cmd_table.h"
+#include "cmd_table_remapper.h"
+
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
@@ -47,9 +50,10 @@ struct watch_t {
     std::vector<uint32_t> targets;
 };
 
+static std::vector<line_t> lines;
 static std::vector<watch_t> watches;
+static bool table_changed = false;
 static uint32_t prev_selected = 0;
-static uint32_t prev_table_hash = 0;
 static std::vector<uint16_t> sent_to[MAX_LINES];
 static uint64_t next_check = 0;
 static uint32_t logged[MAX_LINES];
@@ -92,7 +96,6 @@ static void log_devices() {
     my_mutex_exit(MutexId::THEIR_USAGES);
 }
 
-// Table lines are lines (ended by eol) that hold only numbers, in any expression.
 // Send line: <length in bytes> <report as 32-bit words, report ID first> <targets>, numbered from 0.
 // Watch line: 0 <pattern length> <pattern words> <targets>, not numbered: an input report from a
 // target that starts with the pattern makes the selected send lines go out again.
@@ -136,40 +139,32 @@ static void add_line(std::vector<line_t>& lines, const std::vector<uint32_t>& va
     lines.push_back(line);  // a malformed line keeps its number but has report ID 0 and is never sent
 }
 
-static uint32_t parse_table(std::vector<line_t>& lines, std::vector<watch_t>& found) {
-    uint32_t hash = 2166136261u;
-    std::vector<uint32_t> vals;
-    my_mutex_enter(MutexId::EXPRESSIONS);
-    for (auto const& expr : expressions) {
-        bool numbers_only = true;
-        vals.clear();
-        for (size_t i = 0; i <= expr.size(); i++) {
-            if ((i < expr.size()) && (expr[i].op != Op::EOL)) {
-                if ((expr[i].op == Op::PUSH) || (expr[i].op == Op::PUSH_USAGE)) {
-                    bool count = vals.empty() || ((vals.size() == 1) && (vals[0] == 0));
-                    vals.push_back((count && (expr[i].op == Op::PUSH)) ? expr[i].val / 1000 : expr[i].val);
-                } else {
-                    numbers_only = false;
-                }
-                continue;
-            }
-            if (numbers_only && !vals.empty()) {
-                for (uint32_t v : vals) {
-                    hash = (hash ^ v) * 16777619u;
-                }
-                hash = (hash ^ 0xEE) * 16777619u;
-                if (vals[0] == 0) {
-                    add_watch(found, vals);
-                } else {
-                    add_line(lines, vals);
-                }
-            }
-            numbers_only = true;
-            vals.clear();
-        }
+// command-table handler: hidout owns the lines whose first value is a decimal
+static void table_begin(void*) {
+    lines.clear();
+    watches.clear();
+    table_changed = true;
+}
+
+static bool table_line(const cmd_value_t* vals, size_t n, void*) {
+    if (vals[0].hex) {
+        return false;
     }
-    my_mutex_exit(MutexId::EXPRESSIONS);
-    return hash;
+    std::vector<uint32_t> v;
+    for (size_t i = 0; i < n; i++) {
+        bool count = (i == 0) || ((i == 1) && (vals[0].v == 0));
+        v.push_back((count && !vals[i].hex) ? vals[i].v / 1000 : (uint32_t) vals[i].v);
+    }
+    if (v[0] == 0) {
+        add_watch(watches, v);
+    } else {
+        add_line(lines, v);
+    }
+    return true;
+}
+
+void hidout_init() {
+    cmd_table_add_handler(table_begin, table_line, nullptr);
 }
 
 static bool target_ok(const std::vector<uint32_t>& targets, uint8_t dev_addr) {
@@ -252,6 +247,9 @@ void hidout_task() {
         return;
     }
     next_check = now + RECHECK_US;
+    if (selected != prev_selected) {
+        cmd_table_remapper_read(true);
+    }
     if (selected == 0) {
         for (auto& sent : sent_to) {
             sent.clear();
@@ -260,13 +258,9 @@ void hidout_task() {
         return;
     }
 
-    std::vector<line_t> lines;
-    std::vector<watch_t> found;
-    uint32_t hash = parse_table(lines, found);
-    watches.swap(found);
-    bool table_changed = hash != prev_table_hash;
-    prev_table_hash = hash;
-    if (table_changed) {
+    bool changed = table_changed;
+    table_changed = false;
+    if (changed) {
         LOG("hidout: table has %u send lines, %u watch lines", (unsigned) lines.size(), (unsigned) watches.size());
         for (uint32_t n = 0; n < lines.size(); n++) {
             if (lines[n].report_id == 0) {
@@ -286,7 +280,7 @@ void hidout_task() {
             sent_to[n].clear();
             continue;
         }
-        bool fresh = !(prev_selected & bit) || table_changed;
+        bool fresh = !(prev_selected & bit) || changed;
         if (fresh) {
             sent_to[n].clear();
         }

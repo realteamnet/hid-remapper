@@ -1,5 +1,8 @@
 #include "real_team.h"
 
+#ifdef REAL_TEAM_CMD_TABLE
+#include "cmd_table_remapper.h"
+#endif
 #ifdef WS2812_ENABLED
 #include "ws2812.h"
 #endif
@@ -11,6 +14,16 @@
 #endif
 
 void real_team_task() {
+    static bool initialized = false;
+    if (!initialized) {
+        initialized = true;
+#ifdef HIDOUT_ENABLED
+        hidout_init();
+#endif
+    }
+#ifdef REAL_TEAM_CMD_TABLE
+    cmd_table_remapper_read(false);
+#endif
 #ifdef VDISK_ENABLED
     vdisk_task();
 #endif

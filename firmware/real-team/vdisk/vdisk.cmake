@@ -41,8 +41,8 @@ if(VDISK_ENABLE)
 
     if(VDISK_WEB_TOOL)
         set(VDISK_TOOL_SRC ${CMAKE_CURRENT_LIST_DIR}/../../../config-tool-web)
-        set(VDISK_DEMO ${CMAKE_CURRENT_LIST_DIR}/../ws2812/ws2812_example.json)
-        set(VDISK_DEMO2 ${CMAKE_CURRENT_LIST_DIR}/../hidout/hidout_example.json)
+        set(VDISK_DEMO ${CMAKE_CURRENT_LIST_DIR}/../example_ws2812.json)
+        set(VDISK_DEMO2 ${CMAKE_CURRENT_LIST_DIR}/../example_hidout.json)
         set(VDISK_TOOL_HTML ${CMAKE_CURRENT_BINARY_DIR}/vdisk_webtool.htm)
 
         # Bootstrap: the same files and hashes as the CDN links in index.html

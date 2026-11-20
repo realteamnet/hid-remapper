@@ -9,6 +9,8 @@
 #define HIDOUT_REGISTER 1
 #endif
 
+// registers hidout's handler with the command table (cmd_table.h)
+void hidout_init();
 void hidout_task();
 // logs what a device sends back shortly after hidout sent it a report
 void hidout_report_received(uint8_t dev_addr, uint8_t instance, const uint8_t* report, uint16_t len);
